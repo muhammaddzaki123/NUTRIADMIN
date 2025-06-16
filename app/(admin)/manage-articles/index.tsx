@@ -2,7 +2,7 @@
 
 import { getArticles } from '@/lib/appwrite'; // Kita perlu menambahkan ini di appwrite.ts versi admin
 import { useAppwrite } from '@/lib/useAppwrite';
-import { Article } from '@/types/article'; // Pastikan tipe data Artikel sudah didefinisikan
+import { Article } from '@/types/article';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
@@ -66,7 +66,7 @@ const ManageArticlesScreen = () => {
 
   const handleEdit = (id: string) => {
     // Navigasi ke halaman edit dengan membawa ID artikel
-    router.push(`./manage/${id}`);
+    router.push(`./manage-articles/${id}`);
   };
 
   return (
@@ -75,7 +75,7 @@ const ManageArticlesScreen = () => {
       <View className="flex-row items-center justify-between bg-white px-4 py-4 shadow-sm">
         <Text className="text-2xl font-bold text-gray-900">Manajemen Artikel</Text>
         <TouchableOpacity
-          onPress={() => router.push('./create')}
+          onPress={() => router.push('/(admin)/manage-articles/create')}
           className="bg-primary-500 p-2 rounded-full flex-row items-center"
         >
           <Ionicons name="add" size={24} color="white" />
