@@ -94,13 +94,13 @@ const AdminDashboard = () => {
         <View className="space-y-3">
           <TouchableOpacity 
             className="bg-blue-500 p-4 rounded-xl shadow-lg shadow-blue-500/30"
-            onPress={() => router.push('/(admin)/manage-articles/create')}
+            onPress={() => router.push('./manage-articles')}
           >
             <Text className="text-white text-center font-bold text-base">Buat Artikel Baru</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             className="bg-green-500 p-4 rounded-xl shadow-lg shadow-green-500/30"
-            onPress={() => router.push('/(admin)/manage-users/add-user')}
+            onPress={() => router.push('./manage-users')}
           >
             <Text className="text-white text-center font-bold text-base">Tambah Pengguna Baru</Text>
           </TouchableOpacity>

@@ -1,8 +1,7 @@
 // app/(admin)/manage-users/index.tsx
 
-import { databases, config } from '@/lib/appwrite';
+import { config, databases } from '@/lib/appwrite';
 import { useAppwrite } from '@/lib/useAppwrite';
-import { Models, Query } from 'react-native-appwrite';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
@@ -12,9 +11,9 @@ import {
   SafeAreaView,
   Text,
   TouchableOpacity,
-  View,
-  Image,
+  View
 } from 'react-native';
+import { Models } from 'react-native-appwrite';
 
 // Tipe gabungan untuk user dan ahli gizi
 interface AppUser extends Models.Document {
@@ -88,13 +87,13 @@ const ManageUsersScreen = () => {
         <Text className="text-2xl font-bold text-gray-900">Manajemen Pengguna</Text>
         <View className="flex-row">
           <TouchableOpacity
-            onPress={() => router.push('./add-user')}
+            onPress={() => router.push('/(admin)/manage-users/add-user')}
             className="bg-blue-500 p-2 rounded-full flex-row items-center mr-2"
           >
             <Ionicons name="person-add-outline" size={20} color="white" />
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => router.push('./add-nutritionist')}
+            onPress={() => router.push('/(admin)/manage-users/add-nutritionist')}
             className="bg-green-500 p-2 rounded-full flex-row items-center"
           >
             <Ionicons name="add" size={24} color="white" />
