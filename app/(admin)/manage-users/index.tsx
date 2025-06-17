@@ -4,7 +4,7 @@ import { config, databases } from '@/lib/appwrite';
 import { useAppwrite } from '@/lib/useAppwrite';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React from 'react';
+import React, { useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -15,54 +15,34 @@ import {
 } from 'react-native';
 import { Models } from 'react-native-appwrite';
 
-// Tipe gabungan untuk user dan ahli gizi
-interface AppUser extends Models.Document {
+// Tipe data yang lebih umum, karena userType akan ditentukan oleh tab
+interface AppAccount extends Models.Document {
   name: string;
   email: string;
-  userType: 'user' | 'nutritionist';
   disease?: string;
   specialization?: string;
 }
 
-// Fungsi untuk mengambil semua pengguna dan ahli gizi
-const fetchAllUsers = async () => {
-  try {
-    const [users, nutritionists] = await Promise.all([
-      databases.listDocuments(config.databaseId!, config.usersProfileCollectionId!),
-      databases.listDocuments(config.databaseId!, config.ahligiziCollectionId!),
-    ]);
+// Tipe untuk tab aktif
+type ActiveTab = 'users' | 'nutritionists';
 
-    // Gabungkan dan beri label userType
-    const allUsers: AppUser[] = [
-      ...users.documents.map(doc => ({ ...doc, userType: 'user' })) as AppUser[],
-      ...nutritionists.documents.map(doc => ({ ...doc, userType: 'nutritionist' })) as AppUser[],
-    ];
-
-    // Urutkan berdasarkan tanggal pembuatan
-    return allUsers.sort((a, b) => new Date(b.$createdAt).getTime() - new Date(a.$createdAt).getTime());
-  } catch (error) {
-    console.error("Gagal mengambil daftar pengguna:", error);
-    throw error;
-  }
-};
-
-// Komponen untuk setiap item dalam daftar
-const UserListItem = ({ item }: { item: AppUser }) => (
+// Komponen untuk setiap item dalam daftar, sekarang menerima `type` sebagai prop
+const UserListItem = ({ item, type }: { item: AppAccount; type: ActiveTab }) => (
   <View className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-4">
     <View className="flex-row items-center">
-      <View className={`w-12 h-12 rounded-full justify-center items-center ${item.userType === 'user' ? 'bg-blue-100' : 'bg-green-100'}`}>
+      <View className={`w-12 h-12 rounded-full justify-center items-center ${type === 'users' ? 'bg-blue-100' : 'bg-green-100'}`}>
         <Ionicons 
-          name={item.userType === 'user' ? 'person-outline' : 'fitness-outline'} 
+          name={type === 'users' ? 'person-outline' : 'fitness-outline'} 
           size={24} 
-          color={item.userType === 'user' ? '#3B82F6' : '#10B981'} 
+          color={type === 'users' ? '#3B82F6' : '#10B981'} 
         />
       </View>
       <View className="ml-4 flex-1">
         <Text className="text-lg font-bold text-gray-800" numberOfLines={1}>{item.name}</Text>
         <Text className="text-sm text-gray-600">{item.email}</Text>
-        <View className={`px-2 py-1 rounded-full self-start mt-2 ${item.userType === 'user' ? 'bg-blue-200' : 'bg-green-200'}`}>
-          <Text className={`text-xs font-semibold ${item.userType === 'user' ? 'text-blue-800' : 'text-green-800'}`}>
-            {item.userType === 'user' ? 'Pengguna' : 'Ahli Gizi'}
+        <View className={`px-2 py-1 rounded-full self-start mt-2 ${type === 'users' ? 'bg-blue-200' : 'bg-green-200'}`}>
+          <Text className={`text-xs font-semibold ${type === 'users' ? 'text-blue-800' : 'text-green-800'}`}>
+            {type === 'users' ? 'Pengguna' : 'Ahli Gizi'}
           </Text>
         </View>
       </View>
@@ -78,48 +58,79 @@ const UserListItem = ({ item }: { item: AppUser }) => (
 
 const ManageUsersScreen = () => {
   const router = useRouter();
-  const { data: users, loading, refetch } = useAppwrite({ fn: fetchAllUsers });
+  const [activeTab, setActiveTab] = useState<ActiveTab>('users');
+
+  // Mengambil data untuk pengguna (pasien)
+  const { data: usersResponse, loading: usersLoading, refetch: refetchUsers } = useAppwrite({ 
+    fn: () => databases.listDocuments<AppAccount>(config.databaseId!, config.usersProfileCollectionId!)
+  });
+
+  // Mengambil data untuk ahli gizi
+  const { data: nutritionistsResponse, loading: nutritionistsLoading, refetch: refetchNutritionists } = useAppwrite({ 
+    fn: () => databases.listDocuments<AppAccount>(config.databaseId!, config.ahligiziCollectionId!)
+  });
+
+  const isLoading = usersLoading || nutritionistsLoading;
+  
+  // PERBAIKAN: Akses properti .documents dari hasil response
+  const displayedData = activeTab === 'users' ? usersResponse?.documents : nutritionistsResponse?.documents;
+  const refetchData = activeTab === 'users' ? refetchUsers : refetchNutritionists;
 
   return (
     <SafeAreaView className="flex-1 bg-gray-100">
       {/* Header Halaman */}
-      <View className="flex-row items-center justify-between bg-white px-4 py-4 shadow-sm">
-        <Text className="text-2xl font-bold text-gray-900">Manajemen Pengguna</Text>
-        <View className="flex-row">
-          <TouchableOpacity
-            onPress={() => router.push('/(admin)/manage-users/add-user')}
-            className="bg-blue-500 p-2 rounded-full flex-row items-center mr-2"
-          >
-            <Ionicons name="person-add-outline" size={20} color="white" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => router.push('/(admin)/manage-users/add-nutritionist')}
-            className="bg-green-500 p-2 rounded-full flex-row items-center"
-          >
-            <Ionicons name="add" size={24} color="white" />
-          </TouchableOpacity>
+      <View className="bg-white px-4 pt-4 shadow-sm">
+        <View className="flex-row items-center justify-between">
+            <Text className="text-2xl font-bold text-gray-900">Manajemen Akun</Text>
+            <View className="flex-row">
+            <TouchableOpacity onPress={() => router.push('/(admin)/manage-users/add-user')} className="bg-blue-500 p-2 rounded-full mr-2">
+                <Ionicons name="person-add-outline" size={20} color="white" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push('/(admin)/manage-users/add-nutritionist')} className="bg-green-500 p-2 rounded-full">
+                <Ionicons name="add" size={24} color="white" />
+            </TouchableOpacity>
+            </View>
+        </View>
+
+        {/* Navbar untuk filter tab */}
+        <View className="flex-row mt-4">
+            <TouchableOpacity 
+                onPress={() => setActiveTab('users')}
+                className={`flex-1 items-center py-3 border-b-2 ${activeTab === 'users' ? 'border-primary-500' : 'border-transparent'}`}
+            >
+                <Text className={`font-semibold ${activeTab === 'users' ? 'text-primary-500' : 'text-gray-500'}`}>Pengguna</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+                onPress={() => setActiveTab('nutritionists')}
+                className={`flex-1 items-center py-3 border-b-2 ${activeTab === 'nutritionists' ? 'border-primary-500' : 'border-transparent'}`}
+            >
+                <Text className={`font-semibold ${activeTab === 'nutritionists' ? 'text-primary-500' : 'text-gray-500'}`}>Ahli Gizi</Text>
+            </TouchableOpacity>
         </View>
       </View>
 
-      {loading ? (
+      {/* PERBAIKAN: Gunakan `displayedData?.length` untuk mengecek apakah ada data */}
+      {isLoading && !displayedData?.length ? (
         <View className="flex-1 justify-center items-center">
           <ActivityIndicator size="large" color="#0BBEBB" />
-          <Text>Memuat data pengguna...</Text>
+          <Text className="mt-2 text-gray-600">Memuat data...</Text>
         </View>
       ) : (
         <FlatList
-          data={users}
+          // PERBAIKAN: `displayedData` sudah merupakan array AppAccount[] atau undefined
+          data={displayedData}
           keyExtractor={(item) => item.$id}
-          renderItem={({ item }) => <UserListItem item={item} />}
+          renderItem={({ item }) => <UserListItem item={item} type={activeTab} />}
           contentContainerStyle={{ padding: 16 }}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={() => (
             <View className="flex-1 justify-center items-center mt-20">
-              <Text className="text-gray-500">Tidak ada pengguna atau ahli gizi.</Text>
+              <Ionicons name="people-circle-outline" size={48} color="gray" />
+              <Text className="text-gray-500 mt-4 text-lg">Tidak ada data.</Text>
             </View>
           )}
-          onRefresh={refetch}
-          refreshing={loading}
+          onRefresh={refetchData}
+          refreshing={isLoading}
         />
       )}
     </SafeAreaView>

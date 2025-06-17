@@ -93,7 +93,7 @@ const AdminDashboard = () => {
         <Text className="text-xl font-semibold text-gray-700 mb-4">Aksi Cepat</Text>
         <View className="space-y-3">
           <TouchableOpacity 
-            className="bg-blue-500 p-4 rounded-xl shadow-lg shadow-blue-500/30"
+            className="bg-blue-500 p-4 rounded-xl shadow-lg shadow-blue-500/30 mb-3"
             onPress={() => router.push('./manage-articles')}
           >
             <Text className="text-white text-center font-bold text-base">Buat Artikel Baru</Text>
