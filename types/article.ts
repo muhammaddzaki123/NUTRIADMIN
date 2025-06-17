@@ -1,21 +1,17 @@
 // types/article.ts
 
+import { Models } from "react-native-appwrite";
+
 /**
  * Interface yang merepresentasikan struktur data dari sebuah dokumen artikel
  * yang diambil dari database Appwrite.
  */
-export interface Article {
-  $id: string;
-  $createdAt: string;
-  $updatedAt: string;
-  $collectionId: string;
-  $databaseId: string;
-  $permissions: string[];
+export interface Article extends Models.Document {
   title: string;
   description: string;
+  image: string; // Diubah dari 'image'
   content: string;
-  image: string;
-  category: string;
+  category: 'hipertensi' | 'diabetes' | 'kanker' | 'nutrisi' | 'diet' | 'kesehatan';
   author: string;
   tags: string[];
   isPublished: boolean;
@@ -28,12 +24,12 @@ export interface Article {
  */
 export interface CreateArticleData {
   title: string;
-  description: string;
+  description?: string; // Dibuat opsional
+  image: string;
   content: string;
-  category: string;
-  image?: string; // Opsional, karena gambar bisa diunggah terpisah
+  category: Article['category']; // Menggunakan tipe enum dari Article
   author: string;
   tags: string[];
-  isPublished?: boolean;
-  viewCount?: number;
+  isPublished: boolean;
+  imageFile?: any; // Opsional, untuk menampung data file dari image picker
 }

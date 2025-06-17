@@ -1,5 +1,6 @@
 // lib/appwrite.ts
 
+import { Article, CreateArticleData } from "@/types/article"; // Sesuaikan path jika perlu
 import {
   Account,
   Avatars,
@@ -9,25 +10,28 @@ import {
   Query,
   Storage,
 } from "react-native-appwrite";
-import { CreateArticleData } from "@/types/article";
-import { createArticleNotification } from "./notification-service";
 import { hashPassword } from "./hash-service";
+import { createArticleNotification } from "./notification-service";
 
-// --- Definisi Tipe ---
+// --- DEFINISI TIPE ---
 export interface Admin extends Models.Document {
   name: string;
   email: string;
-  password?: string;
+  password?: string; // Menyimpan hash, opsional agar tidak selalu terambil
   userType: "admin";
 }
 
-// --- Konfigurasi Appwrite ---
+// --- KONFIGURASI APPWRITE ---
 export const config = {
   platform: "com.poltekes.nutripath.admin",
   endpoint: process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT,
   projectId: process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID,
   databaseId: process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID,
-  storageBucketId: process.env.EXPO_PUBLIC_APPWRITE_STORAGE_BUCKET_ID || "default",
+  
+  // ID Bucket untuk gambar artikel. Pastikan ini ada di file .env Anda.
+  storageBucketId: process.env.EXPO_PUBLIC_APPWRITE_STORAGE_BUCKET_ID || 'default',
+  
+  // Koleksi yang digunakan
   adminCollectionId: process.env.EXPO_PUBLIC_APPWRITE_ADMIN_COLLECTION_ID,
   artikelCollectionId: process.env.EXPO_PUBLIC_APPWRITE_ARTIKEL_COLLECTION_ID,
   usersProfileCollectionId: process.env.EXPO_PUBLIC_APPWRITE_USERS_PROFILE_COLLECTION_ID,
@@ -35,8 +39,9 @@ export const config = {
   notificationsCollectionId: process.env.EXPO_PUBLIC_APPWRITE_NOTIFICATION_COLLECTION_ID,
 };
 
-if (!config.adminCollectionId) {
-  throw new Error("ID Koleksi Admin (EXPO_PUBLIC_APPWRITE_ADMIN_COLLECTION_ID) belum diatur.");
+// Validasi konfigurasi penting
+if (!config.adminCollectionId || !config.storageBucketId) {
+  throw new Error("ID Koleksi Admin atau ID Bucket Penyimpanan belum diatur di environment variables.");
 }
 
 // Inisialisasi Klien Appwrite
@@ -60,15 +65,8 @@ export async function registerAdmin(name: string, email: string, plainTextPasswo
   try {
     const existingAdmins = await databases.listDocuments(config.databaseId!, config.adminCollectionId!, [Query.equal("email", email)]);
     if (existingAdmins.total > 0) throw new Error("Email ini sudah terdaftar.");
-    
     const hashedPassword = hashPassword(plainTextPassword);
-    
-    return await databases.createDocument(
-      config.databaseId!,
-      config.adminCollectionId!,
-      "unique()",
-      { name, email, password: hashedPassword, userType: "admin" }
-    );
+    return await databases.createDocument(config.databaseId!, config.adminCollectionId!, "unique()", { name, email, password: hashedPassword, userType: "admin" });
   } catch (error) {
     console.error("Gagal mendaftarkan admin:", error);
     throw error;
@@ -79,13 +77,9 @@ export async function signInAdmin(email: string, plainTextPassword: string): Pro
   try {
     const hashedInputPassword = hashPassword(plainTextPassword);
     const adminUsers = await databases.listDocuments<Admin>(config.databaseId!, config.adminCollectionId!, [Query.equal("email", email)]);
-
     if (adminUsers.total === 0) throw new Error("Kredensial tidak valid.");
-    
     const admin = adminUsers.documents[0];
-
     if (hashedInputPassword !== admin.password) throw new Error("Kredensial tidak valid.");
-
     currentAdmin = admin;
     return admin;
   } catch (error) {
@@ -116,12 +110,7 @@ export async function logout(): Promise<void> {
 export async function createNewUser(userData: { name: string; email: string; password: string; [key: string]: any }): Promise<Models.Document> {
   try {
     const hashedPassword = hashPassword(userData.password);
-    return await databases.createDocument(
-      config.databaseId!,
-      config.usersProfileCollectionId!,
-      "unique()",
-      { ...userData, password: hashedPassword, userType: "user" }
-    );
+    return await databases.createDocument(config.databaseId!, config.usersProfileCollectionId!, "unique()", { ...userData, password: hashedPassword, userType: "user" });
   } catch (error) {
     console.error("Gagal membuat pengguna baru:", error);
     throw error;
@@ -131,12 +120,7 @@ export async function createNewUser(userData: { name: string; email: string; pas
 export async function createNewNutritionist(nutritionistData: { name: string; email: string; password: string; [key: string]: any }): Promise<Models.Document> {
   try {
     const hashedPassword = hashPassword(nutritionistData.password);
-    return await databases.createDocument(
-      config.databaseId!,
-      config.ahligiziCollectionId!,
-      "unique()",
-      { ...nutritionistData, password: hashedPassword, userType: "nutritionist", status: "offline" }
-    );
+    return await databases.createDocument(config.databaseId!, config.ahligiziCollectionId!, "unique()", { ...nutritionistData, password: hashedPassword, userType: "nutritionist", status: "offline" });
   } catch (error) {
     console.error("Gagal membuat ahli gizi baru:", error);
     throw error;
@@ -144,12 +128,29 @@ export async function createNewNutritionist(nutritionistData: { name: string; em
 }
 
 // =================================================================
+// LAYANAN PENYIMPANAN (STORAGE)
+// =================================================================
+
+export async function uploadFile(file: any, bucketId: string): Promise<Models.File> {
+  try {
+    return await storage.createFile(bucketId, 'unique()', file);
+  } catch (error) {
+    console.error("Gagal mengunggah file:", error);
+    throw new Error("Proses unggah file gagal.");
+  }
+}
+
+export function getFilePreview(bucketId: string, fileId: string): URL {
+  return storage.getFileView(bucketId, fileId);
+}
+
+// =================================================================
 // LAYANAN MANAJEMEN KONTEN (ARTIKEL)
 // =================================================================
 
-export async function getArticles(): Promise<Models.Document[]> {
+export async function getArticles(): Promise<Article[]> {
   try {
-    const response = await databases.listDocuments(config.databaseId!, config.artikelCollectionId!, [Query.orderDesc("$createdAt")]);
+    const response = await databases.listDocuments<Article>(config.databaseId!, config.artikelCollectionId!, [Query.orderDesc("$createdAt")]);
     return response.documents;
   } catch (error) {
     console.error("Gagal mengambil artikel:", error);
@@ -157,9 +158,9 @@ export async function getArticles(): Promise<Models.Document[]> {
   }
 }
 
-export async function getArticleById(articleId: string) {
+export async function getArticleById(articleId: string): Promise<Article> {
   try {
-    return await databases.getDocument(config.databaseId!, config.artikelCollectionId!, articleId);
+    return await databases.getDocument<Article>(config.databaseId!, config.artikelCollectionId!, articleId);
   } catch (error) {
     console.error(`Gagal mengambil artikel dengan ID: ${articleId}`, error);
     throw error;
@@ -168,16 +169,36 @@ export async function getArticleById(articleId: string) {
 
 export async function publishNewArticle(articleData: CreateArticleData): Promise<Models.Document> {
   try {
-    const newArticle = await databases.createDocument(
-      config.databaseId!,
-      config.artikelCollectionId!,
-      "unique()",
-      { ...articleData, isPublished: true, viewCount: 0 }
-    );
+    let finalimage = articleData.image;
+
+    if (articleData.imageFile) {
+      console.log("Mengunggah gambar artikel...");
+      const uploadedFile = await uploadFile(articleData.imageFile, config.storageBucketId!);
+      finalimage = getFilePreview(config.storageBucketId!, uploadedFile.$id).href;
+      console.log("Gambar berhasil diunggah:", finalimage);
+    }
+    
+    if (!finalimage) {
+      throw new Error("Gambar artikel wajib ada.");
+    }
+
+    const articlePayload = {
+        title: articleData.title,
+        description: articleData.description || "",
+        content: articleData.content,
+        category: articleData.category,
+        author: articleData.author,
+        tags: articleData.tags,
+        isPublished: articleData.isPublished,
+        image: finalimage,
+        viewCount: 0,
+    };
+    
+    const newArticle = await databases.createDocument(config.databaseId!, config.artikelCollectionId!, "unique()", articlePayload);
 
     const allUserIds = await getAllUserAndNutritionistIds();
     if (allUserIds.length > 0) {
-      await createArticleNotification(newArticle.$id, newArticle.title, newArticle.description, allUserIds);
+      await createArticleNotification(newArticle.$id, newArticle.title, articleData.description || "Artikel baru telah terbit!", allUserIds);
     }
     return newArticle;
   } catch (error) {
