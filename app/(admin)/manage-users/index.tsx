@@ -1,6 +1,6 @@
 // app/(admin)/manage-users/index.tsx
 
-import { config, databases } from '@/lib/appwrite';
+import { config, databases, deleteUser, deleteNutritionist } from '@/lib/appwrite';
 import { useAppwrite } from '@/lib/useAppwrite';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -11,11 +11,11 @@ import {
   SafeAreaView,
   Text,
   TouchableOpacity,
-  View
+  View,
+  Alert
 } from 'react-native';
 import { Models } from 'react-native-appwrite';
 
-// Tipe data yang lebih umum, karena userType akan ditentukan oleh tab
 interface AppAccount extends Models.Document {
   name: string;
   email: string;
@@ -23,11 +23,9 @@ interface AppAccount extends Models.Document {
   specialization?: string;
 }
 
-// Tipe untuk tab aktif
 type ActiveTab = 'users' | 'nutritionists';
 
-// Komponen untuk setiap item dalam daftar, sekarang menerima `type` sebagai prop
-const UserListItem = ({ item, type }: { item: AppAccount; type: ActiveTab }) => (
+const UserListItem = ({ item, type, onDelete }: { item: AppAccount; type: ActiveTab; onDelete: () => void; }) => (
   <View className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-4">
     <View className="flex-row items-center">
       <View className={`w-12 h-12 rounded-full justify-center items-center ${type === 'users' ? 'bg-blue-100' : 'bg-green-100'}`}>
@@ -46,6 +44,10 @@ const UserListItem = ({ item, type }: { item: AppAccount; type: ActiveTab }) => 
           </Text>
         </View>
       </View>
+      {/* Tombol Hapus */}
+      <TouchableOpacity onPress={onDelete} className="bg-red-100 p-2 rounded-full">
+        <Ionicons name="trash-outline" size={20} color="#EF4444" />
+      </TouchableOpacity>
     </View>
     {item.disease && (
       <Text className="text-sm text-gray-500 mt-2 pt-2 border-t border-gray-100">Penyakit: {item.disease}</Text>
@@ -60,25 +62,49 @@ const ManageUsersScreen = () => {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<ActiveTab>('users');
 
-  // Mengambil data untuk pengguna (pasien)
   const { data: usersResponse, loading: usersLoading, refetch: refetchUsers } = useAppwrite({ 
     fn: () => databases.listDocuments<AppAccount>(config.databaseId!, config.usersProfileCollectionId!)
   });
 
-  // Mengambil data untuk ahli gizi
   const { data: nutritionistsResponse, loading: nutritionistsLoading, refetch: refetchNutritionists } = useAppwrite({ 
     fn: () => databases.listDocuments<AppAccount>(config.databaseId!, config.ahligiziCollectionId!)
   });
 
   const isLoading = usersLoading || nutritionistsLoading;
   
-  // PERBAIKAN: Akses properti .documents dari hasil response
   const displayedData = activeTab === 'users' ? usersResponse?.documents : nutritionistsResponse?.documents;
   const refetchData = activeTab === 'users' ? refetchUsers : refetchNutritionists;
 
+  const handleDelete = (account: AppAccount) => {
+    const accountType = activeTab === 'users' ? 'pengguna' : 'ahli gizi';
+    Alert.alert(
+      `Hapus Akun ${accountType}`,
+      `Apakah Anda yakin ingin menghapus akun "${account.name}"? Tindakan ini tidak dapat dibatalkan.`,
+      [
+        { text: "Batal", style: "cancel" },
+        { 
+          text: "Hapus", 
+          onPress: async () => {
+            try {
+              if (activeTab === 'users') {
+                await deleteUser(account.$id);
+              } else {
+                await deleteNutritionist(account.$id);
+              }
+              Alert.alert("Sukses", `Akun ${accountType} telah dihapus.`);
+              refetchData(); // Muat ulang daftar
+            } catch (error) {
+              Alert.alert("Error", `Gagal menghapus akun ${accountType}.`);
+            }
+          },
+          style: "destructive" 
+        },
+      ]
+    );
+  };
+
   return (
     <SafeAreaView className="flex-1 bg-gray-100">
-      {/* Header Halaman */}
       <View className="bg-white px-4 pt-4 shadow-sm">
         <View className="flex-row items-center justify-between">
             <Text className="text-2xl font-bold text-gray-900">Manajemen Akun</Text>
@@ -92,24 +118,16 @@ const ManageUsersScreen = () => {
             </View>
         </View>
 
-        {/* Navbar untuk filter tab */}
         <View className="flex-row mt-4">
-            <TouchableOpacity 
-                onPress={() => setActiveTab('users')}
-                className={`flex-1 items-center py-3 border-b-2 ${activeTab === 'users' ? 'border-primary-500' : 'border-transparent'}`}
-            >
+            <TouchableOpacity onPress={() => setActiveTab('users')} className={`flex-1 items-center py-3 border-b-2 ${activeTab === 'users' ? 'border-primary-500' : 'border-transparent'}`}>
                 <Text className={`font-semibold ${activeTab === 'users' ? 'text-primary-500' : 'text-gray-500'}`}>Pengguna</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
-                onPress={() => setActiveTab('nutritionists')}
-                className={`flex-1 items-center py-3 border-b-2 ${activeTab === 'nutritionists' ? 'border-primary-500' : 'border-transparent'}`}
-            >
+            <TouchableOpacity onPress={() => setActiveTab('nutritionists')} className={`flex-1 items-center py-3 border-b-2 ${activeTab === 'nutritionists' ? 'border-primary-500' : 'border-transparent'}`}>
                 <Text className={`font-semibold ${activeTab === 'nutritionists' ? 'text-primary-500' : 'text-gray-500'}`}>Ahli Gizi</Text>
             </TouchableOpacity>
         </View>
       </View>
 
-      {/* PERBAIKAN: Gunakan `displayedData?.length` untuk mengecek apakah ada data */}
       {isLoading && !displayedData?.length ? (
         <View className="flex-1 justify-center items-center">
           <ActivityIndicator size="large" color="#0BBEBB" />
@@ -117,10 +135,9 @@ const ManageUsersScreen = () => {
         </View>
       ) : (
         <FlatList
-          // PERBAIKAN: `displayedData` sudah merupakan array AppAccount[] atau undefined
           data={displayedData}
           keyExtractor={(item) => item.$id}
-          renderItem={({ item }) => <UserListItem item={item} type={activeTab} />}
+          renderItem={({ item }) => <UserListItem item={item} type={activeTab} onDelete={() => handleDelete(item)} />}
           contentContainerStyle={{ padding: 16 }}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={() => (

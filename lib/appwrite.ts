@@ -1,3 +1,4 @@
+import { Article, CreateArticleData } from "@/types/article";
 import {
   Account,
   Avatars,
@@ -8,11 +9,10 @@ import {
   Query,
   Storage,
 } from "react-native-appwrite";
-import { CreateArticleData, Article } from "@/types/article";
-import { createArticleNotification } from "./notification-service";
 import { hashPassword } from "./hash-service";
+import { createArticleNotification } from "./notification-service";
 
-// --- DEFINISI TIPE ---
+// --- Definisi Tipe ---
 export interface Admin extends Models.Document {
   name: string;
   email: string;
@@ -20,13 +20,13 @@ export interface Admin extends Models.Document {
   userType: "admin";
 }
 
-// --- KONFIGURASI APPWRITE ---
+// --- Konfigurasi Appwrite ---
 export const config = {
   platform: "com.poltekes.nutripath.admin",
   endpoint: process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT,
   projectId: process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID,
   databaseId: process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID,
-  storageBucketId: process.env.EXPO_PUBLIC_APPWRITE_STORAGE_BUCKET_ID || 'default',
+  storageBucketId: process.env.EXPO_PUBLIC_APPWRITE_ARTICLES_BUCKET_ID || "articles",
   adminCollectionId: process.env.EXPO_PUBLIC_APPWRITE_ADMIN_COLLECTION_ID,
   artikelCollectionId: process.env.EXPO_PUBLIC_APPWRITE_ARTIKEL_COLLECTION_ID,
   usersProfileCollectionId: process.env.EXPO_PUBLIC_APPWRITE_USERS_PROFILE_COLLECTION_ID,
@@ -121,6 +121,36 @@ export async function createNewNutritionist(nutritionistData: { name: string; em
   }
 }
 
+/**
+ * --- FUNGSI BARU ---
+ * Menghapus dokumen pengguna (pasien) dari database.
+ * @param userId ID pengguna yang akan dihapus.
+ */
+export async function deleteUser(userId: string): Promise<void> {
+  try {
+    await databases.deleteDocument(config.databaseId!, config.usersProfileCollectionId!, userId);
+    console.log(`Pengguna dengan ID ${userId} berhasil dihapus.`);
+  } catch (error) {
+    console.error("Gagal menghapus pengguna:", error);
+    throw error;
+  }
+}
+
+/**
+ * --- FUNGSI BARU ---
+ * Menghapus dokumen ahli gizi dari database.
+ * @param nutritionistId ID ahli gizi yang akan dihapus.
+ */
+export async function deleteNutritionist(nutritionistId: string): Promise<void> {
+  try {
+    await databases.deleteDocument(config.databaseId!, config.ahligiziCollectionId!, nutritionistId);
+    console.log(`Ahli gizi dengan ID ${nutritionistId} berhasil dihapus.`);
+  } catch (error) {
+    console.error("Gagal menghapus ahli gizi:", error);
+    throw error;
+  }
+}
+
 // =================================================================
 // LAYANAN PENYIMPANAN (STORAGE)
 // =================================================================
@@ -211,8 +241,6 @@ export async function updateArticle(articleId: string, updateData: Partial<Creat
 
 export async function publishNewArticle(articleData: CreateArticleData): Promise<Models.Document> {
   try {
-    // Payload yang akan disimpan ke database.
-    // Properti 'imageFile' tidak ikut disimpan.
     const articlePayload = {
         title: articleData.title,
         description: articleData.description || "",
@@ -221,7 +249,7 @@ export async function publishNewArticle(articleData: CreateArticleData): Promise
         author: articleData.author,
         tags: articleData.tags,
         isPublished: articleData.isPublished,
-        image: articleData.image, // Menggunakan properti 'image'
+        image: articleData.image,
         viewCount: 0,
     };
     
