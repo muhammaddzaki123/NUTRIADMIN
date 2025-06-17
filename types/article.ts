@@ -9,7 +9,7 @@ import { Models } from "react-native-appwrite";
 export interface Article extends Models.Document {
   title: string;
   description: string;
-  image: string; // Diubah dari 'image'
+  image: string; // Diubah dari imageUrl
   content: string;
   category: 'hipertensi' | 'diabetes' | 'kanker' | 'nutrisi' | 'diet' | 'kesehatan';
   author: string;
@@ -24,12 +24,12 @@ export interface Article extends Models.Document {
  */
 export interface CreateArticleData {
   title: string;
-  description?: string; // Dibuat opsional
-  image: string;
+  description: string;
+  image: string; // Diubah dari imageUrl
   content: string;
-  category: Article['category']; // Menggunakan tipe enum dari Article
+  category: Article['category'];
   author: string;
   tags: string[];
   isPublished: boolean;
-  imageFile?: any; // Opsional, untuk menampung data file dari image picker
+  imageFile?: any; // Opsional: untuk menampung data file dari image picker
 }
