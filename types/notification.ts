@@ -1,6 +1,5 @@
 import { Models } from 'react-native-appwrite';
 import { Nutritionist } from '../constants/chat';
-import { RecallData } from '../lib/recall-service';
 import { Article } from './article';
 
 export type NotificationType = 'chat' | 'article' | 'recall';
@@ -13,7 +12,6 @@ export interface NotificationData {
   userId?: string;
   isRecallShare?: boolean;
   articleTitle?: string;
-  recallData?: RecallData;
   articleData?: Article;
 }
 

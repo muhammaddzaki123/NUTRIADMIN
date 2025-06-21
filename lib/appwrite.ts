@@ -1,3 +1,4 @@
+import { Article, CreateArticleData } from "@/types/article";
 import {
   Account,
   Avatars,
@@ -9,7 +10,6 @@ import {
   Query,
   Storage,
 } from "react-native-appwrite";
-import { Article, CreateArticleData } from "@/types/article";
 import { createArticleNotification } from "./notification-service";
 
 // --- Definisi Tipe ---
@@ -26,7 +26,7 @@ export const config = {
   endpoint: process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT,
   projectId: process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID,
   databaseId: process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID,
-  storageBucketId: process.env.EXPO_PUBLIC_APPWRITE_ARTICLES_BUCKET_ID || "articles",
+  storageBucketId: process.env.EXPO_PUBLIC_APPWRITE_STORAGE_BUCKET_ID || "default",
   adminCollectionId: process.env.EXPO_PUBLIC_APPWRITE_ADMIN_COLLECTION_ID,
   artikelCollectionId: process.env.EXPO_PUBLIC_APPWRITE_ARTIKEL_COLLECTION_ID,
   usersProfileCollectionId: process.env.EXPO_PUBLIC_APPWRITE_USERS_PROFILE_COLLECTION_ID,
