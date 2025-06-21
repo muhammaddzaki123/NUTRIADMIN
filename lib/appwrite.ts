@@ -3,12 +3,14 @@ import {
   Avatars,
   Client,
   Databases,
+  Functions, // DIUBAH: Modul Functions ditambahkan
   ID,
   Models,
   Query,
   Storage,
 } from "react-native-appwrite";
 import { Article, CreateArticleData } from "@/types/article";
+import { createArticleNotification } from "./notification-service";
 
 // --- Definisi Tipe ---
 export interface Admin extends Models.Document {
@@ -20,18 +22,26 @@ export interface Admin extends Models.Document {
 
 // --- Konfigurasi Appwrite ---
 export const config = {
-  platform: "com.gumisaq.admin",
+  platform: "com.poltekes.nutripath.admin",
   endpoint: process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT,
   projectId: process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID,
   databaseId: process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID,
   storageBucketId: process.env.EXPO_PUBLIC_APPWRITE_ARTICLES_BUCKET_ID || "articles",
   adminCollectionId: process.env.EXPO_PUBLIC_APPWRITE_ADMIN_COLLECTION_ID,
   artikelCollectionId: process.env.EXPO_PUBLIC_APPWRITE_ARTIKEL_COLLECTION_ID,
+  usersProfileCollectionId: process.env.EXPO_PUBLIC_APPWRITE_USERS_PROFILE_COLLECTION_ID,
+  ahligiziCollectionId: process.env.EXPO_PUBLIC_APPWRITE_AHLIGIZI_COLLECTION_ID,
+  notificationsCollectionId: process.env.EXPO_PUBLIC_APPWRITE_NOTIFICATION_COLLECTION_ID,
+  // BARU: Ganti placeholder ini dengan Function ID Anda
+  deleteUserFunctionId: 'ID_FUNGSI_ANDA_DARI_KONSOL_APPWRITE',
 };
 
 // Validasi Konfigurasi
 if (!config.adminCollectionId) {
   throw new Error("ID Koleksi Admin belum diatur di environment variables.");
+}
+if (!config.deleteUserFunctionId || config.deleteUserFunctionId === 'ID_FUNGSI_ANDA_DARI_KONSOL_APPWRITE') {
+    console.warn("PERINGATAN: 'deleteUserFunctionId' belum diatur di config. Fitur hapus pengguna tidak akan berfungsi.");
 }
 
 // Inisialisasi Klien Appwrite
@@ -44,6 +54,7 @@ export const databases = new Databases(client);
 export const storage = new Storage(client);
 export const account = new Account(client);
 export const avatars = new Avatars(client);
+export const functions = new Functions(client); // BARU: Inisialisasi service Functions
 
 // =================================================================
 // LAYANAN OTENTIKASI ADMIN
@@ -123,7 +134,99 @@ export async function logout(): Promise<void> {
 }
 
 // =================================================================
-// LAYANAN PENYIMPANAN (STORAGE)
+// LAYANAN MANAJEMEN PENGGUNA & AHLI GIZI (DIPERBARUI)
+// =================================================================
+
+/**
+ * Membuat user baru (pasien) oleh admin.
+ */
+export async function createNewUser(userData: { name: string; email: string; password: string; [key: string]: any }): Promise<Models.Document> {
+  try {
+    const newAccount = await account.create(ID.unique(), userData.email, userData.password, userData.name);
+    if (!newAccount) throw new Error("Gagal membuat akun pengguna.");
+    
+    const { password, ...profileData } = userData;
+
+    return await databases.createDocument(config.databaseId!, config.usersProfileCollectionId!, newAccount.$id, {
+      ...profileData,
+      accountId: newAccount.$id,
+      userType: "user"
+    });
+  } catch (error) {
+    console.error("Gagal membuat pengguna baru:", error);
+    throw error;
+  }
+}
+
+/**
+ * Membuat ahli gizi baru oleh admin.
+ */
+export async function createNewNutritionist(nutritionistData: { name: string; email: string; password: string; [key: string]: any }): Promise<Models.Document> {
+  try {
+    const newAccount = await account.create(ID.unique(), nutritionistData.email, nutritionistData.password, nutritionistData.name);
+    if (!newAccount) throw new Error("Gagal membuat akun ahli gizi.");
+
+    const { password, ...profileData } = nutritionistData;
+    
+    return await databases.createDocument(config.databaseId!, config.ahligiziCollectionId!, newAccount.$id, {
+      ...profileData,
+      accountId: newAccount.$id,
+      userType: "nutritionist",
+      status: "offline"
+    });
+  } catch (error) {
+    console.error("Gagal membuat ahli gizi baru:", error);
+    throw error;
+  }
+}
+
+/**
+ * DIUBAH: Menghapus pengguna (pasien) melalui Appwrite Function yang aman.
+ */
+export async function deleteUser(userId: string): Promise<void> {
+  try {
+    // 1. Hapus dokumen profil dari database.
+    await databases.deleteDocument(config.databaseId!, config.usersProfileCollectionId!, userId);
+    
+    // 2. Panggil Appwrite Function untuk menghapus akun otentikasi.
+    await functions.createExecution(
+      config.deleteUserFunctionId,
+      JSON.stringify({ userId: userId }), // Kirim userId sebagai payload
+      false
+    );
+    
+    console.log(`Permintaan penghapusan untuk pengguna ID ${userId} berhasil dikirim.`);
+  } catch (error) {
+    console.error("Gagal menghapus pengguna:", error);
+    throw error;
+  }
+}
+
+/**
+ * DIUBAH: Menghapus ahli gizi melalui Appwrite Function yang aman.
+ */
+export async function deleteNutritionist(nutritionistId: string): Promise<void> {
+  try {
+    // 1. Hapus dokumen profil dari database.
+    await databases.deleteDocument(config.databaseId!, config.ahligiziCollectionId!, nutritionistId);
+    
+    // 2. Panggil Appwrite Function yang sama.
+    await functions.createExecution(
+      config.deleteUserFunctionId,
+      JSON.stringify({ userId: nutritionistId }), // Kirim nutritionistId sebagai payload
+      false
+    );
+
+    console.log(`Permintaan penghapusan untuk ahli gizi ID ${nutritionistId} berhasil dikirim.`);
+  } catch (error) {
+    console.error("Gagal menghapus ahli gizi:", error);
+    throw error;
+  }
+}
+
+
+// =================================================================
+// LAYANAN PENYIMPANAN (STORAGE) - TIDAK ADA PERUBAHAN
 // =================================================================
 
 export async function uploadFile(file: any, bucketId: string): Promise<Models.File> {
@@ -149,7 +252,7 @@ async function deleteFileByUrl(fileUrl: string) {
 }
 
 // =================================================================
-// LAYANAN MANAJEMEN KONTEN (ARTIKEL)
+// LAYANAN MANAJEMEN KONTEN (ARTIKEL) - TIDAK ADA PERUBAHAN
 // =================================================================
 
 export async function getArticles(): Promise<Article[]> {
@@ -231,11 +334,37 @@ export async function publishNewArticle(articleData: CreateArticleData): Promise
       articlePayload
     );
 
-    // Bagian notifikasi dihapus dari sini
-    
+    const allUserIds = await getAllUserAndNutritionistIds();
+    if (allUserIds.length > 0) {
+      await createArticleNotification(
+        newArticle.$id,
+        newArticle.title,
+        articleData.description || "Artikel baru telah terbit!",
+        allUserIds
+      );
+    }
     return newArticle;
   } catch (error) {
     console.error("Gagal mempublikasikan artikel:", error);
     throw error;
+  }
+}
+
+// =================================================================
+// FUNGSI HELPER (INTERNAL) - TIDAK ADA PERUBAHAN
+// =================================================================
+
+async function getAllUserAndNutritionistIds(): Promise<string[]> {
+  try {
+    const [users, nutritionists] = await Promise.all([
+      databases.listDocuments(config.databaseId!, config.usersProfileCollectionId!, [Query.select(["$id"])]),
+      databases.listDocuments(config.databaseId!, config.ahligiziCollectionId!, [Query.select(["$id"])]),
+    ]);
+    const userIds = users.documents.map((doc) => doc.$id);
+    const nutritionistIds = nutritionists.documents.map((doc) => doc.$id);
+    return [...new Set([...userIds, ...nutritionistIds])];
+  } catch (error) {
+    console.error("Error saat mengambil semua ID pengguna:", error);
+    return [];
   }
 }

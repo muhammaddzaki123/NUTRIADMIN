@@ -1,71 +1,95 @@
-// app/(admin)/_layout.tsx
 
-import { Tabs } from 'expo-router';
-import { Image, Text, View } from 'react-native';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { Ionicons } from '@expo/vector-icons'; // Menggunakan Ionicons untuk ikon
+import ErrorBoundary from "@/components/ErrorBoundary";
+import GlobalProvider from "@/lib/global-provider";
+import { useFonts } from "expo-font";
+import { SplashScreen, Stack } from "expo-router";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, View } from "react-native";
+import "../global.css";
 
-// Komponen kustom untuk ikon tab
-const TabIcon = ({ iconName, color, focused, title }: { iconName: keyof typeof Ionicons.glyphMap; color: string; focused: boolean; title:string }) => {
-  return (
-    <View style={{ alignItems: 'center', justifyContent: 'center', gap: 2 }}>
-      <Ionicons name={iconName} size={24} color={color} />
-      <Text style={{ color: color, fontSize: 12, fontWeight: focused ? '600' : '400' }}>
-        {title}
-      </Text>
-    </View>
-  );
-};
+export default function RootLayout() {
+  const [isLoading, setIsLoading] = useState(true);
+  const [fontsLoaded] = useFonts({
+    "Rubik-Bold": require("../assets/fonts/Rubik-Bold.ttf"),
+    "Rubik-ExtraBold": require("../assets/fonts/Rubik-ExtraBold.ttf"),
+    "Rubik-Light": require("../assets/fonts/Rubik-Light.ttf"),
+    "Rubik-Medium": require("../assets/fonts/Rubik-Medium.ttf"),
+    "Rubik-Regular": require("../assets/fonts/Rubik-Regular.ttf"),
+    "Rubik-SemiBold": require("../assets/fonts/Rubik-SemiBold.ttf"),
+  });
 
-const AdminTabLayout = () => {
-  return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <Tabs
-        screenOptions={{
-          headerShown: false, // Header akan diatur di setiap halaman secara individual
-          tabBarShowLabel: false,
-          tabBarActiveTintColor: '#0BBEBB', // Warna ikon aktif
-          tabBarInactiveTintColor: '#666876', // Warna ikon tidak aktif
-          tabBarStyle: {
-            backgroundColor: '#FFFFFF',
-            borderTopWidth: 1,
-            borderTopColor: '#E5E7EB',
-            height: 84,
-            paddingBottom: 10,
-          },
-        }}
-      >
-        <Tabs.Screen
-          name="index" // Merujuk ke app/(admin)/index.tsx
-          options={{
-            title: 'Dashboard',
-            tabBarIcon: ({ color, focused }) => (
-              <TabIcon
-                iconName={focused ? 'grid' : 'grid-outline'}
-                color={color}
-                focused={focused}
-                title="Dashboard"
-              />
-            ),
-          }}
+  useEffect(() => {
+    const SPLASH_TIMEOUT = 5000; // 5 seconds maximum wait time
+    let timeoutId: ReturnType<typeof setTimeout>;
+
+    const loadApp = async () => {
+      try {
+        await SplashScreen.preventAutoHideAsync();
+        
+        // Set a maximum timeout for the splash screen
+        const id = setTimeout(() => {
+          console.log("Splash screen timeout reached, forcing hide");
+          SplashScreen.hideAsync()
+            .catch(console.error)
+            .finally(() => setIsLoading(false));
+        }, SPLASH_TIMEOUT);
+        
+        timeoutId = id;
+
+        // Wait for fonts to load
+        if (fontsLoaded) {
+          clearTimeout(timeoutId);
+          await SplashScreen.hideAsync();
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error("Error in splash screen management:", error);
+        SplashScreen.hideAsync()
+          .catch(console.error)
+          .finally(() => setIsLoading(false));
+      }
+    };
+
+    loadApp().catch((error) => {
+      console.error("Failed to load app:", error);
+      setIsLoading(false);
+    });
+
+    // Cleanup timeout on unmount
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded || isLoading) {
+    return (
+      <View style={{ 
+        flex: 1, 
+        backgroundColor: "#BFF8F8", 
+        justifyContent: 'center', 
+        alignItems: 'center' 
+      }}>
+        <ActivityIndicator 
+          size="large" 
+          color="#1CD6CE"
+          animating={true} 
         />
-        <Tabs.Screen
-          name="manage-articles" // Merujuk ke app/(admin)/manage-articles/
-          options={{
-            title: 'Artikel',
-            tabBarIcon: ({ color, focused }) => (
-              <TabIcon
-                iconName={focused ? 'document-text' : 'document-text-outline'}
-                color={color}
-                focused={focused}
-                title="Artikel"
-              />
-            ),
-          }}
-        />
-      </Tabs>
-    </GestureHandlerRootView>
-  );
-};
+      </View>
+    );
+  }
 
-export default AdminTabLayout;
+  return (
+    <ErrorBoundary>
+      <GlobalProvider>
+          <Stack 
+            screenOptions={{ 
+              headerShown: false,
+              animation: 'slide_from_right'
+            }} 
+          />
+      </GlobalProvider>
+    </ErrorBoundary>
+  );
+}
