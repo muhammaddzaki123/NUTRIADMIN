@@ -8,11 +8,9 @@ import {
   Query,
   Storage,
 } from "react-native-appwrite";
-import { Article, CreateArticleData } from "@/types/article"; // Pastikan tipe ini ada
-import { createArticleNotification } from "./notification-service"; // Pastikan file ini ada
+import { Article, CreateArticleData } from "@/types/article";
 
 // --- Definisi Tipe ---
-// 'password' dihapus dari tipe karena tidak lagi disimpan di database
 export interface Admin extends Models.Document {
   name: string;
   email: string;
@@ -20,18 +18,15 @@ export interface Admin extends Models.Document {
   accountId: string;
 }
 
-// --- Konfigurasi Appwrite (Sesuai Asli) ---
+// --- Konfigurasi Appwrite ---
 export const config = {
-  platform: "com.poltekes.nutripath.admin",
+  platform: "com.gumisaq.admin",
   endpoint: process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT,
   projectId: process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID,
   databaseId: process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID,
   storageBucketId: process.env.EXPO_PUBLIC_APPWRITE_ARTICLES_BUCKET_ID || "articles",
   adminCollectionId: process.env.EXPO_PUBLIC_APPWRITE_ADMIN_COLLECTION_ID,
   artikelCollectionId: process.env.EXPO_PUBLIC_APPWRITE_ARTIKEL_COLLECTION_ID,
-  usersProfileCollectionId: process.env.EXPO_PUBLIC_APPWRITE_USERS_PROFILE_COLLECTION_ID,
-  ahligiziCollectionId: process.env.EXPO_PUBLIC_APPWRITE_AHLIGIZI_COLLECTION_ID,
-  notificationsCollectionId: process.env.EXPO_PUBLIC_APPWRITE_NOTIFICATION_COLLECTION_ID,
 };
 
 // Validasi Konfigurasi
@@ -50,11 +45,9 @@ export const storage = new Storage(client);
 export const account = new Account(client);
 export const avatars = new Avatars(client);
 
-
 // =================================================================
-// LAYANAN OTENTIKASI ADMIN (DIPERBARUI DENGAN METODE AMAN)
+// LAYANAN OTENTIKASI ADMIN
 // =================================================================
-
 /**
  * PENTING: Pendaftaran admin sebaiknya dilakukan dari Appwrite Console untuk keamanan.
  * Fungsi ini disediakan untuk development, jangan diekspos di UI publik.
@@ -88,9 +81,9 @@ export async function signInAdmin(email: string, password: string): Promise<Admi
   try {
     await account.deleteSession("current").catch(() => {});
     await account.createEmailPasswordSession(email, password);
-    const adminData = await getCurrentUser(); // Menggunakan getCurrentUser yang sudah diperbaiki
+    const adminData = await getCurrentUser();
     if (!adminData) {
-      await logout(); // Hapus sesi jika profil admin tidak ditemukan
+      await logout();
       throw new Error("Akun ini tidak memiliki hak akses sebagai admin.");
     }
     return adminData;
@@ -130,83 +123,7 @@ export async function logout(): Promise<void> {
 }
 
 // =================================================================
-// LAYANAN MANAJEMEN PENGGUNA & AHLI GIZI (DIPERBARUI)
-// =================================================================
-
-/**
- * Membuat user baru (pasien) oleh admin.
- */
-export async function createNewUser(userData: { name: string; email: string; password: string; [key: string]: any }): Promise<Models.Document> {
-  try {
-    const newAccount = await account.create(ID.unique(), userData.email, userData.password, userData.name);
-    if (!newAccount) throw new Error("Gagal membuat akun pengguna.");
-    
-    const { password, ...profileData } = userData;
-
-    return await databases.createDocument(config.databaseId!, config.usersProfileCollectionId!, newAccount.$id, {
-      ...profileData,
-      accountId: newAccount.$id,
-      userType: "user"
-    });
-  } catch (error) {
-    console.error("Gagal membuat pengguna baru:", error);
-    throw error;
-  }
-}
-
-/**
- * Membuat ahli gizi baru oleh admin.
- */
-export async function createNewNutritionist(nutritionistData: { name: string; email: string; password: string; [key: string]: any }): Promise<Models.Document> {
-  try {
-    const newAccount = await account.create(ID.unique(), nutritionistData.email, nutritionistData.password, nutritionistData.name);
-    if (!newAccount) throw new Error("Gagal membuat akun ahli gizi.");
-
-    const { password, ...profileData } = nutritionistData;
-    
-    return await databases.createDocument(config.databaseId!, config.ahligiziCollectionId!, newAccount.$id, {
-      ...profileData,
-      accountId: newAccount.$id,
-      userType: "nutritionist",
-      status: "offline"
-    });
-  } catch (error) {
-    console.error("Gagal membuat ahli gizi baru:", error);
-    throw error;
-  }
-}
-
-/**
- * Menghapus pengguna (pasien), termasuk akun otentikasi dan profil databasenya.
- */
-export async function deleteUser(userId: string): Promise<void> {
-  try {
-    await databases.deleteDocument(config.databaseId!, config.usersProfileCollectionId!, userId);
-    await account.deleteIdentity(userId);
-    console.log(`Pengguna dengan ID ${userId} berhasil dihapus sepenuhnya.`);
-  } catch (error) {
-    console.error("Gagal menghapus pengguna:", error);
-    throw error;
-  }
-}
-
-/**
- * Menghapus ahli gizi, termasuk akun otentikasi dan profil databasenya.
- */
-export async function deleteNutritionist(nutritionistId: string): Promise<void> {
-  try {
-    await databases.deleteDocument(config.databaseId!, config.ahligiziCollectionId!, nutritionistId);
-    await account.deleteIdentity(nutritionistId);
-    console.log(`Ahli gizi dengan ID ${nutritionistId} berhasil dihapus sepenuhnya.`);
-  } catch (error) {
-    console.error("Gagal menghapus ahli gizi:", error);
-    throw error;
-  }
-}
-
-
-// =================================================================
-// LAYANAN PENYIMPANAN (STORAGE) - TIDAK ADA PERUBAHAN
+// LAYANAN PENYIMPANAN (STORAGE)
 // =================================================================
 
 export async function uploadFile(file: any, bucketId: string): Promise<Models.File> {
@@ -232,7 +149,7 @@ async function deleteFileByUrl(fileUrl: string) {
 }
 
 // =================================================================
-// LAYANAN MANAJEMEN KONTEN (ARTIKEL) - TIDAK ADA PERUBAHAN
+// LAYANAN MANAJEMEN KONTEN (ARTIKEL)
 // =================================================================
 
 export async function getArticles(): Promise<Article[]> {
@@ -314,52 +231,11 @@ export async function publishNewArticle(articleData: CreateArticleData): Promise
       articlePayload
     );
 
-    const allUserIds = await getAllUserAndNutritionistIds();
-    if (allUserIds.length > 0) {
-      await createArticleNotification(
-        newArticle.$id,
-        newArticle.title,
-        articleData.description || "Artikel baru telah terbit!",
-        allUserIds
-      );
-    }
+    // Bagian notifikasi dihapus dari sini
+    
     return newArticle;
   } catch (error) {
     console.error("Gagal mempublikasikan artikel:", error);
     throw error;
   }
 }
-
-// =================================================================
-// FUNGSI HELPER (INTERNAL) - TIDAK ADA PERUBAHAN
-// =================================================================
-
-async function getAllUserAndNutritionistIds(): Promise<string[]> {
-  try {
-    const [users, nutritionists] = await Promise.all([
-      databases.listDocuments(config.databaseId!, config.usersProfileCollectionId!, [Query.select(["$id"])]),
-      databases.listDocuments(config.databaseId!, config.ahligiziCollectionId!, [Query.select(["$id"])]),
-    ]);
-    const userIds = users.documents.map((doc) => doc.$id);
-    const nutritionistIds = nutritionists.documents.map((doc) => doc.$id);
-    return [...new Set([...userIds, ...nutritionistIds])];
-  } catch (error) {
-    console.error("Error saat mengambil semua ID pengguna:", error);
-    return [];
-  }
-}
-
-// ```
-
-// ### Ringkasan Perubahan Utama pada File Ini:
-
-// 1.  **Struktur Konfigurasi Asli**: Objek `config` dan semua nama `collectionId` di dalamnya **tidak diubah** dan dipertahankan sesuai kode asli Anda.
-// 2.  **Otentikasi Admin yang Aman**:
-//     * Fungsi `registerAdmin`, `signInAdmin`, `getCurrentUser`, dan `logout` telah sepenuhnya diubah untuk menggunakan metode aman dari Appwrite (`account.create`, `account.createEmailPasswordSession`, `account.get`, `account.deleteSession`).
-//     * **Tidak ada lagi** penyimpanan atau perbandingan password manual di database.
-// 3.  **Manajemen Pengguna yang Aman**:
-//     * Fungsi `createNewUser` dan `createNewNutritionist` sekarang juga menggunakan `account.create` untuk membuat akun otentikasi bagi setiap user baru. Ini berarti mereka bisa login dengan aman.
-//     * Fungsi `deleteUser` dan `deleteNutritionist` sekarang juga menghapus akun dari sistem otentikasi Appwrite (`account.deleteIdentity`), memastikan penghapusan data yang tuntas.
-// 4.  **Fungsi Lain Tetap Sama**: Seluruh logika untuk mengelola artikel, upload file, dan notifikasi tidak diubah karena sudah berfungsi dengan baik dan tidak terkait langsung dengan metode otentikasi.
-
-// Versi ini siap digunakan untuk aplikasi admin Anda dan menyediakan fondasi yang jauh lebih aman dan and
