@@ -1,0 +1,9 @@
+{
+  "name": "delete-user-from-admin",
+  "version": "1.0.0",
+  "description": "Fungsi aman untuk menghapus pengguna.",
+  "main": "src/index.js",
+  "dependencies": {
+    "node-appwrite": "^12.0.1"
+  }
+}
