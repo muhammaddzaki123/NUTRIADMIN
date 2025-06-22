@@ -27,7 +27,7 @@ export const config = {
   projectId: process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID,
   databaseId: process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID,
   storageBucketId:
-    process.env.EXPO_PUBLIC_APPWRITE_ARTICLES_BUCKET_ID || "articles",
+    process.env.EXPO_PUBLIC_APPWRITE_ARTICLES_BUCKET_ID || "default",
   adminCollectionId: process.env.EXPO_PUBLIC_APPWRITE_ADMIN_COLLECTION_ID,
   artikelCollectionId: process.env.EXPO_PUBLIC_APPWRITE_ARTIKEL_COLLECTION_ID,
   usersProfileCollectionId:
