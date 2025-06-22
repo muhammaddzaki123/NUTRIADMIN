@@ -35,7 +35,7 @@ module.exports = async function (req, res) {
 
     // Pastikan userId ada di dalam payload.
     if (!userIdToDelete) {
-      throw new Error('userId wajib ada di dalam payload request.');
+      throw new Error('userId wajib disertakan dalam payload request.');
     }
 
     // Ini adalah perintah inti: menghapus pengguna berdasarkan ID.
