@@ -1,3 +1,4 @@
+import { Article, CreateArticleData } from "@/types/article";
 import {
   Account,
   Avatars,
@@ -9,7 +10,6 @@ import {
   Query,
   Storage,
 } from "react-native-appwrite";
-import { Article, CreateArticleData } from "@/types/article";
 import { createArticleNotification } from "./notification-service";
 
 // --- Definisi Tipe ---
