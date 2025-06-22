@@ -4,7 +4,7 @@ import {
   Avatars,
   Client,
   Databases,
-  Functions, // Ditambahkan untuk interaksi dengan Appwrite Functions
+  Functions,
   ID,
   Models,
   Query,
@@ -57,7 +57,7 @@ export const databases = new Databases(client);
 export const storage = new Storage(client);
 export const account = new Account(client);
 export const avatars = new Avatars(client);
-export const functions = new Functions(client); // Inisialisasi service Functions
+export const functions = new Functions(client);
 
 // =================================================================
 // LAYANAN OTENTIKASI ADMIN (Tidak ada perubahan)
@@ -163,21 +163,16 @@ export async function createNewNutritionist(nutritionistData: { name: string; em
   }
 }
 
-/**
- * DIUBAH: Menghapus pengguna (pasien) melalui Appwrite Function yang aman.
- */
+//delete User & Nutritionist
 export async function deleteUser(userId: string): Promise<void> {
   try {
     if (!config.deleteUserFunctionId) {
         throw new Error("ID Fungsi untuk menghapus pengguna tidak dikonfigurasi.");
     }
-    // 1. Hapus dokumen profil dari database.
     await databases.deleteDocument(config.databaseId!, config.usersProfileCollectionId!, userId);
-    
-    // 2. Panggil Appwrite Function untuk menghapus akun otentikasi.
     await functions.createExecution(
       config.deleteUserFunctionId,
-      JSON.stringify({ userId: userId }), // Kirim userId sebagai payload
+      JSON.stringify({ userId: userId }),
       false
     );
     
@@ -188,21 +183,15 @@ export async function deleteUser(userId: string): Promise<void> {
   }
 }
 
-/**
- * DIUBAH: Menghapus ahli gizi melalui Appwrite Function yang aman.
- */
 export async function deleteNutritionist(nutritionistId: string): Promise<void> {
   try {
     if (!config.deleteUserFunctionId) {
         throw new Error("ID Fungsi untuk menghapus pengguna tidak dikonfigurasi.");
     }
-    // 1. Hapus dokumen profil dari database.
     await databases.deleteDocument(config.databaseId!, config.ahligiziCollectionId!, nutritionistId);
-    
-    // 2. Panggil Appwrite Function yang sama.
     await functions.createExecution(
       config.deleteUserFunctionId,
-      JSON.stringify({ userId: nutritionistId }), // Kirim nutritionistId sebagai payload
+      JSON.stringify({ userId: nutritionistId }), 
       false
     );
 
@@ -212,7 +201,7 @@ export async function deleteNutritionist(nutritionistId: string): Promise<void> 
     throw error;
   }
 }
-
+//delete User & Nutritionist sampe sini
 
 // =================================================================
 // LAYANAN PENYIMPANAN (STORAGE) - TIDAK ADA PERUBAHAN
@@ -360,9 +349,13 @@ async function getAllUserAndNutritionistIds(): Promise<string[]> {
 // =================================================================
 export async function getLoginLogs(): Promise<Models.Document[]> {
   try {
+    if (!config.loginlogCollectionId) {
+      throw new Error("ID Koleksi untuk Login Log belum diatur.");
+    }
+
     const logs = await databases.listDocuments(
       config.databaseId!,
-      config.loginlogCollectionId!,
+      config.loginlogCollectionId,
       [Query.orderDesc("$createdAt"), Query.limit(100)]
     );
     return logs.documents;
