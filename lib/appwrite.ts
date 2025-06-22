@@ -26,19 +26,17 @@ export const config = {
   endpoint: process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT,
   projectId: process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID,
   databaseId: process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID,
-  storageBucketId:
-    process.env.EXPO_PUBLIC_APPWRITE_ARTICLES_BUCKET_ID || "default",
+  storageBucketId:process.env.EXPO_PUBLIC_APPWRITE_ARTICLES_BUCKET_ID || "default",
   adminCollectionId: process.env.EXPO_PUBLIC_APPWRITE_ADMIN_COLLECTION_ID,
   artikelCollectionId: process.env.EXPO_PUBLIC_APPWRITE_ARTIKEL_COLLECTION_ID,
-  usersProfileCollectionId:
-    process.env.EXPO_PUBLIC_APPWRITE_USERS_PROFILE_COLLECTION_ID,
-  ahligiziCollectionId:
-    process.env.EXPO_PUBLIC_APPWRITE_AHLIGIZI_COLLECTION_ID,
-  notificationsCollectionId:
-    process.env.EXPO_PUBLIC_APPWRITE_NOTIFICATION_COLLECTION_ID,
-  // DIUBAH: Mengambil ID fungsi dari environment variable untuk keamanan
-  deleteUserFunctionId:
-    process.env.EXPO_PUBLIC_APPWRITE_DELETE_USER_FUNCTION_ID,
+  usersProfileCollectionId:process.env.EXPO_PUBLIC_APPWRITE_USERS_PROFILE_COLLECTION_ID,
+  ahligiziCollectionId:process.env.EXPO_PUBLIC_APPWRITE_AHLIGIZI_COLLECTION_ID,
+  notificationsCollectionId:process.env.EXPO_PUBLIC_APPWRITE_NOTIFICATION_COLLECTION_ID,
+  loginlogCollectionId:process.env.EXPO_PUBLIC_APPWRITE_LOGINLOG_COLLECTION_ID,
+  
+  //functions
+  deleteUserFunctionId:process.env.EXPO_PUBLIC_APPWRITE_DELETE_USER_FUNCTION_ID,
+  loginlogFunctionId:process.env.EXPO_PUBLIC_APPWRITE_LOGINLOG_FUNCTION_ID,
 };
 
 // Validasi Konfigurasi
@@ -354,5 +352,22 @@ async function getAllUserAndNutritionistIds(): Promise<string[]> {
   } catch (error) {
     console.error("Error saat mengambil semua ID pengguna:", error);
     return [];
+  }
+}
+
+// =================================================================
+// LAYANAN LOGGING
+// =================================================================
+export async function getLoginLogs(): Promise<Models.Document[]> {
+  try {
+    const logs = await databases.listDocuments(
+      config.databaseId!,
+      config.loginlogCollectionId!,
+      [Query.orderDesc("$createdAt"), Query.limit(100)]
+    );
+    return logs.documents;
+  } catch (error) {
+    console.error("Gagal mengambil log login:", error);
+    throw error;
   }
 }
