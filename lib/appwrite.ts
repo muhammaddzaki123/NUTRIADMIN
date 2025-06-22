@@ -1,15 +1,15 @@
-import { Article, CreateArticleData } from "@/types/article";
 import {
   Account,
   Avatars,
   Client,
   Databases,
-  Functions, // DIUBAH: Modul Functions ditambahkan
+  Functions, // Ditambahkan untuk interaksi dengan Appwrite Functions
   ID,
   Models,
   Query,
   Storage,
 } from "react-native-appwrite";
+import { Article, CreateArticleData } from "@/types/article";
 import { createArticleNotification } from "./notification-service";
 
 // --- Definisi Tipe ---
@@ -26,22 +26,27 @@ export const config = {
   endpoint: process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT,
   projectId: process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID,
   databaseId: process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID,
-  storageBucketId: process.env.EXPO_PUBLIC_APPWRITE_STORAGE_BUCKET_ID || "default",
+  storageBucketId:
+    process.env.EXPO_PUBLIC_APPWRITE_ARTICLES_BUCKET_ID || "articles",
   adminCollectionId: process.env.EXPO_PUBLIC_APPWRITE_ADMIN_COLLECTION_ID,
   artikelCollectionId: process.env.EXPO_PUBLIC_APPWRITE_ARTIKEL_COLLECTION_ID,
-  usersProfileCollectionId: process.env.EXPO_PUBLIC_APPWRITE_USERS_PROFILE_COLLECTION_ID,
-  ahligiziCollectionId: process.env.EXPO_PUBLIC_APPWRITE_AHLIGIZI_COLLECTION_ID,
-  notificationsCollectionId: process.env.EXPO_PUBLIC_APPWRITE_NOTIFICATION_COLLECTION_ID,
-  // BARU: Ganti placeholder ini dengan Function ID Anda
-  deleteUserFunctionId: 'ID_FUNGSI_ANDA_DARI_KONSOL_APPWRITE',
+  usersProfileCollectionId:
+    process.env.EXPO_PUBLIC_APPWRITE_USERS_PROFILE_COLLECTION_ID,
+  ahligiziCollectionId:
+    process.env.EXPO_PUBLIC_APPWRITE_AHLIGIZI_COLLECTION_ID,
+  notificationsCollectionId:
+    process.env.EXPO_PUBLIC_APPWRITE_NOTIFICATION_COLLECTION_ID,
+  // DIUBAH: Mengambil ID fungsi dari environment variable untuk keamanan
+  deleteUserFunctionId:
+    process.env.EXPO_PUBLIC_APPWRITE_DELETE_USER_FUNCTION_ID,
 };
 
 // Validasi Konfigurasi
 if (!config.adminCollectionId) {
-  throw new Error("ID Koleksi Admin belum diatur di environment variables.");
+  throw new Error("ID Koleksi Admin (ADMIN_COLLECTION_ID) belum diatur di environment variables.");
 }
-if (!config.deleteUserFunctionId || config.deleteUserFunctionId === 'ID_FUNGSI_ANDA_DARI_KONSOL_APPWRITE') {
-    console.warn("PERINGATAN: 'deleteUserFunctionId' belum diatur di config. Fitur hapus pengguna tidak akan berfungsi.");
+if (!config.deleteUserFunctionId) {
+    console.warn("PERINGATAN: 'DELETE_USER_FUNCTION_ID' belum diatur di environment variables. Fitur hapus pengguna tidak akan berfungsi.");
 }
 
 // Inisialisasi Klien Appwrite
@@ -54,15 +59,11 @@ export const databases = new Databases(client);
 export const storage = new Storage(client);
 export const account = new Account(client);
 export const avatars = new Avatars(client);
-export const functions = new Functions(client); // BARU: Inisialisasi service Functions
+export const functions = new Functions(client); // Inisialisasi service Functions
 
 // =================================================================
-// LAYANAN OTENTIKASI ADMIN
+// LAYANAN OTENTIKASI ADMIN (Tidak ada perubahan)
 // =================================================================
-/**
- * PENTING: Pendaftaran admin sebaiknya dilakukan dari Appwrite Console untuk keamanan.
- * Fungsi ini disediakan untuk development, jangan diekspos di UI publik.
- */
 export async function registerAdmin(name: string, email: string, password: string): Promise<Models.Document> {
   try {
     const newAccount = await account.create(ID.unique(), email, password, name);
@@ -85,9 +86,6 @@ export async function registerAdmin(name: string, email: string, password: strin
   }
 }
 
-/**
- * Login admin menggunakan sesi aman Appwrite.
- */
 export async function signInAdmin(email: string, password: string): Promise<Admin> {
   try {
     await account.deleteSession("current").catch(() => {});
@@ -103,9 +101,6 @@ export async function signInAdmin(email: string, password: string): Promise<Admi
   }
 }
 
-/**
- * Mengambil data admin yang sedang login dari sesi aktif.
- */
 export async function getCurrentUser(): Promise<Admin | null> {
   try {
     const currentAccount = await account.get();
@@ -122,9 +117,6 @@ export async function getCurrentUser(): Promise<Admin | null> {
   }
 }
 
-/**
- * Logout admin dengan menghapus sesi saat ini.
- */
 export async function logout(): Promise<void> {
   try {
     await account.deleteSession("current");
@@ -134,12 +126,8 @@ export async function logout(): Promise<void> {
 }
 
 // =================================================================
-// LAYANAN MANAJEMEN PENGGUNA & AHLI GIZI (DIPERBARUI)
+// LAYANAN MANAJEMEN PENGGUNA & AHLI GIZI
 // =================================================================
-
-/**
- * Membuat user baru (pasien) oleh admin.
- */
 export async function createNewUser(userData: { name: string; email: string; password: string; [key: string]: any }): Promise<Models.Document> {
   try {
     const newAccount = await account.create(ID.unique(), userData.email, userData.password, userData.name);
@@ -158,9 +146,6 @@ export async function createNewUser(userData: { name: string; email: string; pas
   }
 }
 
-/**
- * Membuat ahli gizi baru oleh admin.
- */
 export async function createNewNutritionist(nutritionistData: { name: string; email: string; password: string; [key: string]: any }): Promise<Models.Document> {
   try {
     const newAccount = await account.create(ID.unique(), nutritionistData.email, nutritionistData.password, nutritionistData.name);
@@ -185,6 +170,9 @@ export async function createNewNutritionist(nutritionistData: { name: string; em
  */
 export async function deleteUser(userId: string): Promise<void> {
   try {
+    if (!config.deleteUserFunctionId) {
+        throw new Error("ID Fungsi untuk menghapus pengguna tidak dikonfigurasi.");
+    }
     // 1. Hapus dokumen profil dari database.
     await databases.deleteDocument(config.databaseId!, config.usersProfileCollectionId!, userId);
     
@@ -207,6 +195,9 @@ export async function deleteUser(userId: string): Promise<void> {
  */
 export async function deleteNutritionist(nutritionistId: string): Promise<void> {
   try {
+    if (!config.deleteUserFunctionId) {
+        throw new Error("ID Fungsi untuk menghapus pengguna tidak dikonfigurasi.");
+    }
     // 1. Hapus dokumen profil dari database.
     await databases.deleteDocument(config.databaseId!, config.ahligiziCollectionId!, nutritionistId);
     
@@ -228,7 +219,6 @@ export async function deleteNutritionist(nutritionistId: string): Promise<void> 
 // =================================================================
 // LAYANAN PENYIMPANAN (STORAGE) - TIDAK ADA PERUBAHAN
 // =================================================================
-
 export async function uploadFile(file: any, bucketId: string): Promise<Models.File> {
   try {
       return await storage.createFile(bucketId, ID.unique(), file);
@@ -254,7 +244,6 @@ async function deleteFileByUrl(fileUrl: string) {
 // =================================================================
 // LAYANAN MANAJEMEN KONTEN (ARTIKEL) - TIDAK ADA PERUBAHAN
 // =================================================================
-
 export async function getArticles(): Promise<Article[]> {
   try {
     const response = await databases.listDocuments<Article>(config.databaseId!, config.artikelCollectionId!, [Query.orderDesc("$createdAt")]);
@@ -353,7 +342,6 @@ export async function publishNewArticle(articleData: CreateArticleData): Promise
 // =================================================================
 // FUNGSI HELPER (INTERNAL) - TIDAK ADA PERUBAHAN
 // =================================================================
-
 async function getAllUserAndNutritionistIds(): Promise<string[]> {
   try {
     const [users, nutritionists] = await Promise.all([
