@@ -1,19 +1,19 @@
 // app/(admin)/manage-users/index.tsx
 
-import { config, databases, deleteUser, deleteNutritionist } from '@/lib/appwrite';
+import { config, databases, deleteNutritionist, deleteUser } from '@/lib/appwrite';
 import { useAppwrite } from '@/lib/useAppwrite';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   SafeAreaView,
+  ScrollView,
   Text,
   TouchableOpacity,
-  View,
-  Alert,
-  ScrollView
+  View
 } from 'react-native';
 import { Models } from 'react-native-appwrite';
 
@@ -61,7 +61,9 @@ const UserListItem = ({ item, type, onDelete }: { item: AppAccount; type: Active
 const ManageUsersScreen = () => {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<ActiveTab>('users');
+  
   const [selectedDisease, setSelectedDisease] = useState<string | null>(null);
+  const [selectedSpecialization, setSelectedSpecialization] = useState<string | null>(null);
 
   const { data: usersResponse, loading: usersLoading, refetch: refetchUsers } = useAppwrite({ 
     fn: () => databases.listDocuments<AppAccount>(config.databaseId!, config.usersProfileCollectionId!)
@@ -75,24 +77,40 @@ const ManageUsersScreen = () => {
     if (!usersResponse?.documents) return [];
     const allDiseases = usersResponse.documents
       .map(user => user.disease)
-      .filter((disease): disease is string => !!disease); // <-- PERBAIKAN DI SINI
-      
+      .filter((disease): disease is string => !!disease);
     return ['Semua', ...Array.from(new Set(allDiseases))];
   }, [usersResponse]);
 
+  const specializationFilters = useMemo(() => {
+    if (!nutritionistsResponse?.documents) return [];
+    const allSpecializations = nutritionistsResponse.documents
+      .map(n => n.specialization)
+      .filter((spec): spec is string => !!spec);
+    return ['Semua', ...Array.from(new Set(allSpecializations))];
+  }, [nutritionistsResponse]);
+
   const displayedData = useMemo(() => {
-    if (activeTab === 'nutritionists') {
-      return nutritionistsResponse?.documents || [];
+    if (activeTab === 'users') {
+      if (!selectedDisease || selectedDisease === 'Semua') {
+        return usersResponse?.documents || [];
+      }
+      return usersResponse?.documents.filter(user => user.disease === selectedDisease) || [];
     }
     
-    if (!selectedDisease || selectedDisease === 'Semua') {
-      return usersResponse?.documents || [];
+    if (activeTab === 'nutritionists') {
+      if (!selectedSpecialization || selectedSpecialization === 'Semua') {
+        return nutritionistsResponse?.documents || [];
+      }
+      // PERBAIKAN DI SINI
+      return nutritionistsResponse?.documents.filter(n => n.specialization === selectedSpecialization) || [];
     }
-    return usersResponse?.documents.filter(user => user.disease === selectedDisease) || [];
-  }, [activeTab, selectedDisease, usersResponse, nutritionistsResponse]);
+    
+    return [];
+  }, [activeTab, selectedDisease, usersResponse, selectedSpecialization, nutritionistsResponse]);
 
   useEffect(() => {
     setSelectedDisease(null);
+    setSelectedSpecialization(null);
   }, [activeTab]);
 
   const isLoading = usersLoading || nutritionistsLoading;
@@ -126,19 +144,16 @@ const ManageUsersScreen = () => {
     );
   };
 
-  const FilterCard = ({ title }: { title: string }) => {
-    const isActive = (selectedDisease === null && title === 'Semua') || selectedDisease === title;
-    return (
-      <TouchableOpacity
-        onPress={() => setSelectedDisease(title === 'Semua' ? null : title)}
-        className={`px-4 py-2 rounded-full mr-2 border ${isActive ? 'bg-primary-500 border-primary-500' : 'bg-white border-gray-300'}`}
-      >
-        <Text className={`font-semibold capitalize ${isActive ? 'text-white' : 'text-gray-700'}`}>
-          {title}
-        </Text>
-      </TouchableOpacity>
-    );
-  };
+  const FilterCard = ({ title, isActive, onPress }: { title: string; isActive: boolean; onPress: () => void; }) => (
+    <TouchableOpacity
+      onPress={onPress}
+      className={`px-4 py-2 rounded-full mr-2 border ${isActive ? 'bg-primary-500 border-primary-500' : 'bg-white border-gray-300'}`}
+    >
+      <Text className={`font-semibold capitalize ${isActive ? 'text-white' : 'text-gray-700'}`}>
+        {title}
+      </Text>
+    </TouchableOpacity>
+  );
 
   return (
     <SafeAreaView className="flex-1 bg-gray-100">
@@ -168,7 +183,29 @@ const ManageUsersScreen = () => {
       {activeTab === 'users' && diseaseFilters.length > 1 && (
         <View className="px-4 pt-3 bg-white pb-3 border-b border-gray-200">
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {diseaseFilters.map((disease) => <FilterCard key={disease} title={disease} />)}
+            {diseaseFilters.map((disease) => 
+              <FilterCard 
+                key={disease} 
+                title={disease}
+                isActive={(selectedDisease === null && disease === 'Semua') || selectedDisease === disease}
+                onPress={() => setSelectedDisease(disease === 'Semua' ? null : disease)}
+              />
+            )}
+          </ScrollView>
+        </View>
+      )}
+
+      {activeTab === 'nutritionists' && specializationFilters.length > 1 && (
+        <View className="px-4 pt-3 bg-white pb-3 border-b border-gray-200">
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {specializationFilters.map((spec) => 
+              <FilterCard 
+                key={spec} 
+                title={spec}
+                isActive={(selectedSpecialization === null && spec === 'Semua') || selectedSpecialization === spec}
+                onPress={() => setSelectedSpecialization(spec === 'Semua' ? null : spec)}
+              />
+            )}
           </ScrollView>
         </View>
       )}
