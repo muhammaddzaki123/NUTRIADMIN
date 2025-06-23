@@ -1,8 +1,9 @@
 // app/(admin)/index.tsx
 
 import {
-  getAllUsers // PERUBAHAN: Impor fungsi baru
-  ,
+  getAllArticles,
+  getAllNutritionists,
+  getAllUsers,
   getArticlesCount,
   getLoginLogs,
   getNutritionistsCount,
@@ -59,24 +60,28 @@ const AdminDashboard = () => {
   const { admin } = useGlobalContext();
   const router = useRouter();
 
-  // Mengambil data statistik
-  const { data: usersCount, loading: usersLoading, refetch: refetchUsers } = useAppwrite({ fn: getUsersCount });
-  const { data: articlesCount, loading: articlesLoading, refetch: refetchArticles } = useAppwrite({ fn: getArticlesCount });
-  const { data: nutritionistsCount, loading: nutritionistsLoading, refetch: refetchNutritionists } = useAppwrite({ fn: getNutritionistsCount });
-  const { data: loginLogs, loading: logsLoading, refetch: refetchLogs } = useAppwrite({ fn: getLoginLogs });
+  // Mengambil data hitungan
+  const { data: usersCount, refetch: refetchUsersCount } = useAppwrite({ fn: getUsersCount });
+  const { data: articlesCount, refetch: refetchArticlesCount } = useAppwrite({ fn: getArticlesCount });
+  const { data: nutritionistsCount, refetch: refetchNutritionistsCount } = useAppwrite({ fn: getNutritionistsCount });
   
-  // PERUBAHAN: Ambil semua data pengguna untuk rincian
-  const { data: allUsers, loading: allUsersLoading, refetch: refetchAllUsers } = useAppwrite({ fn: getAllUsers });
+  // Mengambil semua data untuk rincian
+  const { data: allUsers, loading: usersLoading, refetch: refetchAllUsers } = useAppwrite({ fn: getAllUsers });
+  const { data: allArticles, loading: articlesLoading, refetch: refetchAllArticles } = useAppwrite({ fn: getAllArticles });
+  const { data: allNutritionists, loading: nutritionistsLoading, refetch: refetchAllNutritionists } = useAppwrite({ fn: getAllNutritionists });
+  const { data: loginLogs, loading: logsLoading, refetch: refetchLogs } = useAppwrite({ fn: getLoginLogs });
 
-  const isContentLoading = usersLoading || articlesLoading || nutritionistsLoading || logsLoading || allUsersLoading;
+  const isContentLoading = usersLoading || articlesLoading || nutritionistsLoading || logsLoading;
 
   const handleRefresh = async () => {
     await Promise.all([
-      refetchUsers(),
-      refetchArticles(),
-      refetchNutritionists(),
+      refetchUsersCount(),
+      refetchArticlesCount(),
+      refetchNutritionistsCount(),
+      refetchAllUsers(),
+      refetchAllArticles(),
+      refetchAllNutritionists(),
       refetchLogs(),
-      refetchAllUsers(), // PERUBAHAN: Refresh data pengguna juga
     ]);
   };
 
@@ -85,31 +90,30 @@ const AdminDashboard = () => {
     router.replace('/sign-in');
   };
 
-  // PERUBAHAN: Fungsi untuk menampilkan rincian pengguna
-  const showUserBreakdown = () => {
-    if (!allUsers) {
-      Alert.alert("Info", "Data pengguna belum siap, silakan coba lagi sesaat.");
+  // Fungsi generik untuk memproses dan menampilkan alert rincian
+  const formatAndShowAlert = (title: string, data: Models.Document[] | null, groupBy: string, defaultCategory: string) => {
+    if (!data) {
+      Alert.alert("Info", "Data belum siap, silakan coba lagi sesaat.");
       return;
     }
 
-    const diseaseCounts = allUsers.reduce((acc, user) => {
-      const disease = user.disease ? (user.disease as string).charAt(0).toUpperCase() + (user.disease as string).slice(1) : 'Lainnya';
-      acc[disease] = (acc[disease] || 0) + 1;
+    const counts = data.reduce((acc: Record<string, number>, item: Models.Document & { [key: string]: any }) => {
+      const category = item[groupBy] ? (item[groupBy] as string).charAt(0).toUpperCase() + (item[groupBy] as string).slice(1) : defaultCategory;
+      acc[category] = (acc[category] || 0) + 1;
       return acc;
-    }, {} as Record<string, number>);
+    }, {});
 
-    let message = "Berikut adalah rincian pengguna berdasarkan penyakit:\n\n";
-    const sortedDiseases = Object.keys(diseaseCounts).sort();
+    let message = `Berikut adalah rincian ${title.toLowerCase()} berdasarkan ${groupBy}:\n\n`;
+    const sortedKeys = Object.keys(counts).sort();
     
-    if (sortedDiseases.length === 0) {
-      message = "Belum ada data pengguna dengan rincian penyakit.";
+    if (sortedKeys.length === 0) {
+      message = `Belum ada data untuk ditampilkan.`;
     } else {
-      for (const disease of sortedDiseases) {
-        message += `• ${disease}: ${diseaseCounts[disease]} pengguna\n`;
+      for (const key of sortedKeys) {
+        message += `• ${key}: ${counts[key]}\n`;
       }
     }
-
-    Alert.alert("Ringkasan Pengguna", message);
+    Alert.alert(title, message);
   };
 
   return (
@@ -131,18 +135,19 @@ const AdminDashboard = () => {
       >
         <Text className="text-xl font-semibold text-gray-700 mb-4">Ringkasan Sistem</Text>
 
-        {/* Bagian Statistik */}
+        {/* Bagian Statistik Interaktif */}
         <View className="flex-row justify-around mb-4">
-          {/* PERUBAHAN: Bungkus StatCard pengguna dengan TouchableOpacity */}
-          <TouchableOpacity onPress={showUserBreakdown} className="flex-1">
+          <TouchableOpacity onPress={() => formatAndShowAlert("Ringkasan Pengguna", allUsers, "disease", "Lainnya")} className="flex-1">
             <StatCard iconName="people-outline" title="Total Pengguna" value={usersCount?.toString() || '0'} color="#3B82F6" />
           </TouchableOpacity>
-          <View className="flex-1">
+          <TouchableOpacity onPress={() => formatAndShowAlert("Ringkasan Artikel", allArticles, "category", "Umum")} className="flex-1">
             <StatCard iconName="document-text-outline" title="Total Artikel" value={articlesCount?.toString() || '0'} color="#10B981" />
-          </View>
+          </TouchableOpacity>
         </View>
         <View className="flex-row justify-around mb-8">
-           <StatCard iconName="fitness-outline" title="Total Ahli Gizi" value={nutritionistsCount?.toString() || '0'} color="#F97316" />
+           <TouchableOpacity onPress={() => formatAndShowAlert("Ringkasan Ahli Gizi", allNutritionists, "specialization", "Umum")} className="flex-1">
+            <StatCard iconName="fitness-outline" title="Total Ahli Gizi" value={nutritionistsCount?.toString() || '0'} color="#F97316" />
+           </TouchableOpacity>
         </View>
 
         {/* Aksi Cepat */}
@@ -173,7 +178,6 @@ const AdminDashboard = () => {
             )
           )}
         </View>
-
       </ScrollView>
     </SafeAreaView>
   );
