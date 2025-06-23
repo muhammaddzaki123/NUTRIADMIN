@@ -4,7 +4,7 @@ import { config, databases, deleteUser, deleteNutritionist } from '@/lib/appwrit
 import { useAppwrite } from '@/lib/useAppwrite';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -12,7 +12,8 @@ import {
   Text,
   TouchableOpacity,
   View,
-  Alert
+  Alert,
+  ScrollView
 } from 'react-native';
 import { Models } from 'react-native-appwrite';
 
@@ -44,7 +45,6 @@ const UserListItem = ({ item, type, onDelete }: { item: AppAccount; type: Active
           </Text>
         </View>
       </View>
-      {/* Tombol Hapus */}
       <TouchableOpacity onPress={onDelete} className="bg-red-100 p-2 rounded-full">
         <Ionicons name="trash-outline" size={20} color="#EF4444" />
       </TouchableOpacity>
@@ -61,6 +61,7 @@ const UserListItem = ({ item, type, onDelete }: { item: AppAccount; type: Active
 const ManageUsersScreen = () => {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<ActiveTab>('users');
+  const [selectedDisease, setSelectedDisease] = useState<string | null>(null);
 
   const { data: usersResponse, loading: usersLoading, refetch: refetchUsers } = useAppwrite({ 
     fn: () => databases.listDocuments<AppAccount>(config.databaseId!, config.usersProfileCollectionId!)
@@ -69,10 +70,32 @@ const ManageUsersScreen = () => {
   const { data: nutritionistsResponse, loading: nutritionistsLoading, refetch: refetchNutritionists } = useAppwrite({ 
     fn: () => databases.listDocuments<AppAccount>(config.databaseId!, config.ahligiziCollectionId!)
   });
+  
+  const diseaseFilters = useMemo(() => {
+    if (!usersResponse?.documents) return [];
+    const allDiseases = usersResponse.documents
+      .map(user => user.disease)
+      .filter((disease): disease is string => !!disease); // <-- PERBAIKAN DI SINI
+      
+    return ['Semua', ...Array.from(new Set(allDiseases))];
+  }, [usersResponse]);
+
+  const displayedData = useMemo(() => {
+    if (activeTab === 'nutritionists') {
+      return nutritionistsResponse?.documents || [];
+    }
+    
+    if (!selectedDisease || selectedDisease === 'Semua') {
+      return usersResponse?.documents || [];
+    }
+    return usersResponse?.documents.filter(user => user.disease === selectedDisease) || [];
+  }, [activeTab, selectedDisease, usersResponse, nutritionistsResponse]);
+
+  useEffect(() => {
+    setSelectedDisease(null);
+  }, [activeTab]);
 
   const isLoading = usersLoading || nutritionistsLoading;
-  
-  const displayedData = activeTab === 'users' ? usersResponse?.documents : nutritionistsResponse?.documents;
   const refetchData = activeTab === 'users' ? refetchUsers : refetchNutritionists;
 
   const handleDelete = (account: AppAccount) => {
@@ -92,7 +115,7 @@ const ManageUsersScreen = () => {
                 await deleteNutritionist(account.$id);
               }
               Alert.alert("Sukses", `Akun ${accountType} telah dihapus.`);
-              refetchData(); // Muat ulang daftar
+              refetchData();
             } catch (error) {
               Alert.alert("Error", `Gagal menghapus akun ${accountType}.`);
             }
@@ -103,18 +126,32 @@ const ManageUsersScreen = () => {
     );
   };
 
+  const FilterCard = ({ title }: { title: string }) => {
+    const isActive = (selectedDisease === null && title === 'Semua') || selectedDisease === title;
+    return (
+      <TouchableOpacity
+        onPress={() => setSelectedDisease(title === 'Semua' ? null : title)}
+        className={`px-4 py-2 rounded-full mr-2 border ${isActive ? 'bg-primary-500 border-primary-500' : 'bg-white border-gray-300'}`}
+      >
+        <Text className={`font-semibold capitalize ${isActive ? 'text-white' : 'text-gray-700'}`}>
+          {title}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
+
   return (
     <SafeAreaView className="flex-1 bg-gray-100">
       <View className="bg-white px-4 pt-4 shadow-sm">
         <View className="flex-row items-center justify-between">
             <Text className="text-2xl font-bold text-gray-900">Manajemen Akun</Text>
             <View className="flex-row">
-            <TouchableOpacity onPress={() => router.push('/(admin)/manage-users/add-user')} className="bg-blue-500 p-2 rounded-full mr-2">
-                <Ionicons name="person-add-outline" size={20} color="white" />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => router.push('/(admin)/manage-users/add-nutritionist')} className="bg-green-500 p-2 rounded-full">
-                <Ionicons name="add" size={24} color="white" />
-            </TouchableOpacity>
+              <TouchableOpacity onPress={() => router.push('/(admin)/manage-users/add-user')} className="bg-blue-500 p-2 rounded-full mr-2">
+                  <Ionicons name="person-add-outline" size={20} color="white" />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => router.push('/(admin)/manage-users/add-nutritionist')} className="bg-green-500 p-2 rounded-full">
+                  <Ionicons name="add" size={24} color="white" />
+              </TouchableOpacity>
             </View>
         </View>
 
@@ -127,6 +164,14 @@ const ManageUsersScreen = () => {
             </TouchableOpacity>
         </View>
       </View>
+      
+      {activeTab === 'users' && diseaseFilters.length > 1 && (
+        <View className="px-4 pt-3 bg-white pb-3 border-b border-gray-200">
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {diseaseFilters.map((disease) => <FilterCard key={disease} title={disease} />)}
+          </ScrollView>
+        </View>
+      )}
 
       {isLoading && !displayedData?.length ? (
         <View className="flex-1 justify-center items-center">
@@ -143,7 +188,7 @@ const ManageUsersScreen = () => {
           ListEmptyComponent={() => (
             <View className="flex-1 justify-center items-center mt-20">
               <Ionicons name="people-circle-outline" size={48} color="gray" />
-              <Text className="text-gray-500 mt-4 text-lg">Tidak ada data.</Text>
+              <Text className="text-gray-500 mt-4 text-lg">Tidak ada data untuk ditampilkan.</Text>
             </View>
           )}
           onRefresh={refetchData}
