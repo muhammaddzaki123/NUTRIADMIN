@@ -364,3 +364,58 @@ export async function getLoginLogs(): Promise<Models.Document[]> {
     throw error;
   }
 }
+
+// =================================================================
+// LAYANAN STATISTIK DASBOR
+// =================================================================
+
+/**
+ * Mengambil jumlah total pengguna terdaftar.
+ */
+export async function getUsersCount(): Promise<number> {
+  try {
+    const response = await databases.listDocuments(
+      config.databaseId!,
+      config.usersProfileCollectionId!,
+      [Query.limit(1)] // PERBAIKAN: Ubah dari 0 menjadi 1
+    );
+    return response.total;
+  } catch (error) {
+    console.error("Gagal mengambil jumlah pengguna:", error);
+    throw new Error("Gagal mengambil data jumlah pengguna.");
+  }
+}
+
+/**
+ * Mengambil jumlah total artikel yang ada.
+ */
+export async function getArticlesCount(): Promise<number> {
+  try {
+    const response = await databases.listDocuments(
+      config.databaseId!,
+      config.artikelCollectionId!,
+      [Query.limit(1)] // PERBAIKAN: Ubah dari 0 menjadi 1
+    );
+    return response.total;
+  } catch (error) {
+    console.error("Gagal mengambil jumlah artikel:", error);
+    throw new Error("Gagal mengambil data jumlah artikel.");
+  }
+}
+
+/**
+ * Mengambil jumlah total ahli gizi terdaftar.
+ */
+export async function getNutritionistsCount(): Promise<number> {
+  try {
+    const response = await databases.listDocuments(
+      config.databaseId!,
+      config.ahligiziCollectionId!,
+      [Query.limit(1)] // PERBAIKAN: Ubah dari 0 menjadi 1
+    );
+    return response.total;
+  } catch (error) {
+    console.error("Gagal mengambil jumlah ahli gizi:", error);
+    throw new Error("Gagal mengambil data jumlah ahli gizi.");
+  }
+}
