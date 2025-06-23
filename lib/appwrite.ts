@@ -419,3 +419,54 @@ export async function getNutritionistsCount(): Promise<number> {
     throw new Error("Gagal mengambil data jumlah ahli gizi.");
   }
 }
+
+/**
+ * Mengambil semua dokumen profil pengguna.
+ */
+export async function getAllUsers(): Promise<Models.Document[]> {
+  try {
+    const data = await databases.listDocuments(
+      config.databaseId!,
+      config.usersProfileCollectionId!,
+      [Query.limit(5000)] // Atur batas yang cukup tinggi
+    );
+    return data.documents;
+  } catch (error) {
+    console.error("Gagal mengambil semua data pengguna:", error);
+    throw error;
+  }
+}
+
+/**
+ * Mengambil semua dokumen artikel.
+ */
+export async function getAllArticles(): Promise<Models.Document[]> {
+    try {
+      const data = await databases.listDocuments(
+        config.databaseId!,
+        config.artikelCollectionId!,
+        [Query.limit(5000)]
+      );
+      return data.documents;
+    } catch (error) {
+      console.error("Gagal mengambil semua data artikel:", error);
+      throw error;
+    }
+  }
+  
+/**
+ * Mengambil semua dokumen ahli gizi.
+ */
+export async function getAllNutritionists(): Promise<Models.Document[]> {
+    try {
+        const data = await databases.listDocuments(
+        config.databaseId!,
+        config.ahligiziCollectionId!,
+        [Query.limit(5000)]
+        );
+        return data.documents;
+    } catch (error) {
+        console.error("Gagal mengambil semua data ahli gizi:", error);
+        throw error;
+    }
+}

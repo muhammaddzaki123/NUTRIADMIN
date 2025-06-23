@@ -1,6 +1,14 @@
 // app/(admin)/index.tsx
 
-import { getArticlesCount, getLoginLogs, getNutritionistsCount, getUsersCount, logout } from '@/lib/appwrite'; // Tambahkan fungsi baru
+import {
+  getAllUsers // PERUBAHAN: Impor fungsi baru
+  ,
+  getArticlesCount,
+  getLoginLogs,
+  getNutritionistsCount,
+  getUsersCount,
+  logout
+} from '@/lib/appwrite';
 import { useGlobalContext } from '@/lib/global-provider';
 import { useAppwrite } from '@/lib/useAppwrite';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,17 +16,17 @@ import { useRouter } from 'expo-router';
 import React from 'react';
 import {
   ActivityIndicator,
+  Alert,
   RefreshControl,
   SafeAreaView,
   ScrollView,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from 'react-native';
 import { Models } from 'react-native-appwrite';
 
-// Komponen StatCard dan LogListItem tidak perlu diubah
-
+// Komponen StatCard dan LogListItem tidak berubah
 const StatCard = ({ iconName, title, value, color }: { iconName: keyof typeof Ionicons.glyphMap; title: string; value: string; color: string }) => (
   <View className="flex-1 bg-white p-4 rounded-2xl shadow-md shadow-black/10 items-center mx-2">
     <Ionicons name={iconName} size={32} color={color} />
@@ -51,13 +59,16 @@ const AdminDashboard = () => {
   const { admin } = useGlobalContext();
   const router = useRouter();
 
-  // Mengambil data statistik secara dinamis
+  // Mengambil data statistik
   const { data: usersCount, loading: usersLoading, refetch: refetchUsers } = useAppwrite({ fn: getUsersCount });
   const { data: articlesCount, loading: articlesLoading, refetch: refetchArticles } = useAppwrite({ fn: getArticlesCount });
   const { data: nutritionistsCount, loading: nutritionistsLoading, refetch: refetchNutritionists } = useAppwrite({ fn: getNutritionistsCount });
   const { data: loginLogs, loading: logsLoading, refetch: refetchLogs } = useAppwrite({ fn: getLoginLogs });
+  
+  // PERUBAHAN: Ambil semua data pengguna untuk rincian
+  const { data: allUsers, loading: allUsersLoading, refetch: refetchAllUsers } = useAppwrite({ fn: getAllUsers });
 
-  const isContentLoading = usersLoading || articlesLoading || nutritionistsLoading || logsLoading;
+  const isContentLoading = usersLoading || articlesLoading || nutritionistsLoading || logsLoading || allUsersLoading;
 
   const handleRefresh = async () => {
     await Promise.all([
@@ -65,13 +76,40 @@ const AdminDashboard = () => {
       refetchArticles(),
       refetchNutritionists(),
       refetchLogs(),
+      refetchAllUsers(), // PERUBAHAN: Refresh data pengguna juga
     ]);
   };
 
   const handleLogout = async () => {
-    // fungsi handleLogout tetap sama
     await logout();
     router.replace('/sign-in');
+  };
+
+  // PERUBAHAN: Fungsi untuk menampilkan rincian pengguna
+  const showUserBreakdown = () => {
+    if (!allUsers) {
+      Alert.alert("Info", "Data pengguna belum siap, silakan coba lagi sesaat.");
+      return;
+    }
+
+    const diseaseCounts = allUsers.reduce((acc, user) => {
+      const disease = user.disease ? (user.disease as string).charAt(0).toUpperCase() + (user.disease as string).slice(1) : 'Lainnya';
+      acc[disease] = (acc[disease] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    let message = "Berikut adalah rincian pengguna berdasarkan penyakit:\n\n";
+    const sortedDiseases = Object.keys(diseaseCounts).sort();
+    
+    if (sortedDiseases.length === 0) {
+      message = "Belum ada data pengguna dengan rincian penyakit.";
+    } else {
+      for (const disease of sortedDiseases) {
+        message += `• ${disease}: ${diseaseCounts[disease]} pengguna\n`;
+      }
+    }
+
+    Alert.alert("Ringkasan Pengguna", message);
   };
 
   return (
@@ -93,10 +131,15 @@ const AdminDashboard = () => {
       >
         <Text className="text-xl font-semibold text-gray-700 mb-4">Ringkasan Sistem</Text>
 
-        {/* Bagian Statistik dengan data dinamis */}
+        {/* Bagian Statistik */}
         <View className="flex-row justify-around mb-4">
-          <StatCard iconName="people-outline" title="Total Pengguna" value={usersCount?.toString() || '0'} color="#3B82F6" />
-          <StatCard iconName="document-text-outline" title="Total Artikel" value={articlesCount?.toString() || '0'} color="#10B981" />
+          {/* PERUBAHAN: Bungkus StatCard pengguna dengan TouchableOpacity */}
+          <TouchableOpacity onPress={showUserBreakdown} className="flex-1">
+            <StatCard iconName="people-outline" title="Total Pengguna" value={usersCount?.toString() || '0'} color="#3B82F6" />
+          </TouchableOpacity>
+          <View className="flex-1">
+            <StatCard iconName="document-text-outline" title="Total Artikel" value={articlesCount?.toString() || '0'} color="#10B981" />
+          </View>
         </View>
         <View className="flex-row justify-around mb-8">
            <StatCard iconName="fitness-outline" title="Total Ahli Gizi" value={nutritionistsCount?.toString() || '0'} color="#F97316" />
