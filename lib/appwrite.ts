@@ -203,6 +203,53 @@ export async function deleteNutritionist(nutritionistId: string): Promise<void> 
 }
 //delete User & Nutritionist sampe sini
 
+//edit user dan ahligizi
+export async function getUserById(userId: string): Promise<Models.Document> {
+  try {
+    return await databases.getDocument(config.databaseId!, config.usersProfileCollectionId!, userId);
+  } catch (error) {
+    console.error(`Gagal mengambil pengguna dengan ID: ${userId}`, error);
+    throw error;
+  }
+}
+
+export async function getNutritionistById(nutritionistId: string): Promise<Models.Document> {
+  try {
+    return await databases.getDocument(config.databaseId!, config.ahligiziCollectionId!, nutritionistId);
+  } catch (error) {
+    console.error(`Gagal mengambil ahli gizi dengan ID: ${nutritionistId}`, error);
+    throw error;
+  }
+}
+
+export async function updateUser(userId: string, userData: { name: string; age: string; gender: string; disease: string; }): Promise<Models.Document> {
+  try {
+    return await databases.updateDocument(
+      config.databaseId!,
+      config.usersProfileCollectionId!,
+      userId,
+      userData
+    );
+  } catch (error) {
+    console.error("Gagal memperbarui pengguna:", error);
+    throw error;
+  }
+}
+
+export async function updateNutritionist(nutritionistId: string, nutritionistData: { name: string; gender: string; specialization: string; }): Promise<Models.Document> {
+  try {
+    return await databases.updateDocument(
+      config.databaseId!,
+      config.ahligiziCollectionId!,
+      nutritionistId,
+      nutritionistData
+    );
+  } catch (error) {
+    console.error("Gagal memperbarui ahli gizi:", error);
+    throw error;
+  }
+}
+
 // =================================================================
 // LAYANAN PENYIMPANAN (STORAGE) - TIDAK ADA PERUBAHAN
 // =================================================================
@@ -470,4 +517,8 @@ export async function getAllNutritionists(): Promise<Models.Document[]> {
         throw error;
     }
 }
+
+// =================================================================
+// edit user dan ahligizi
+// =================================================================
 

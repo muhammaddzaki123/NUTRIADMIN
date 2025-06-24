@@ -2,7 +2,6 @@
 
 import { config, databases, deleteNutritionist, deleteUser } from '@/lib/appwrite';
 import { useAppwrite } from '@/lib/useAppwrite';
-// PERUBAHAN 1: Impor fungsi formatDiseaseName
 import { formatDiseaseName } from '@/utils/format';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -28,8 +27,7 @@ interface AppAccount extends Models.Document {
 
 type ActiveTab = 'users' | 'nutritionists';
 
-// PERUBAHAN 2: Format disease dan specialization di dalam komponen
-const UserListItem = ({ item, type, onDelete }: { item: AppAccount; type: ActiveTab; onDelete: () => void; }) => (
+const UserListItem = ({ item, type, onDelete, onEdit }: { item: AppAccount; type: ActiveTab; onDelete: () => void; onEdit: () => void; }) => (
   <View className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-4">
     <View className="flex-row items-center">
       <View className={`w-12 h-12 rounded-full justify-center items-center ${type === 'users' ? 'bg-blue-100' : 'bg-green-100'}`}>
@@ -48,6 +46,9 @@ const UserListItem = ({ item, type, onDelete }: { item: AppAccount; type: Active
           </Text>
         </View>
       </View>
+      <TouchableOpacity onPress={onEdit} className="bg-blue-100 p-2 rounded-full mr-2">
+        <Ionicons name="pencil-outline" size={20} color="#3B82F6" />
+      </TouchableOpacity>
       <TouchableOpacity onPress={onDelete} className="bg-red-100 p-2 rounded-full">
         <Ionicons name="trash-outline" size={20} color="#EF4444" />
       </TouchableOpacity>
@@ -76,7 +77,6 @@ const ManageUsersScreen = () => {
     fn: () => databases.listDocuments<AppAccount>(config.databaseId!, config.ahligiziCollectionId!)
   });
   
-  // PERUBAHAN 3: Ubah cara filter dibuat untuk memisahkan label dan value
   const diseaseFilters = useMemo(() => {
     if (!usersResponse?.documents) return [];
     const allDiseases = usersResponse.documents
@@ -126,6 +126,20 @@ const ManageUsersScreen = () => {
 
   const isLoading = usersLoading || nutritionistsLoading;
   const refetchData = activeTab === 'users' ? refetchUsers : refetchNutritionists;
+
+  const handleEdit = (id: string) => {
+    if (activeTab === 'users') {
+      router.push({
+        pathname: "/(admin)/manage-users/edit-user/[id]",
+        params: { id: id }
+      });
+    } else {
+      router.push({
+        pathname: "/(admin)/manage-users/edit-nutritionist/[id]",
+        params: { id: id }
+      });
+    }
+  };
 
   const handleDelete = (account: AppAccount) => {
     const accountType = activeTab === 'users' ? 'pengguna' : 'ahli gizi';
@@ -191,7 +205,6 @@ const ManageUsersScreen = () => {
         </View>
       </View>
       
-      {/* PERUBAHAN 4: Logika render filter disesuaikan */}
       {activeTab === 'users' && diseaseFilters.length > 1 && (
         <View className="px-4 pt-3 bg-white pb-3 border-b border-gray-200">
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -231,7 +244,7 @@ const ManageUsersScreen = () => {
         <FlatList
           data={displayedData}
           keyExtractor={(item) => item.$id}
-          renderItem={({ item }) => <UserListItem item={item} type={activeTab} onDelete={() => handleDelete(item)} />}
+          renderItem={({ item }) => <UserListItem item={item} type={activeTab} onDelete={() => handleDelete(item)} onEdit={() => handleEdit(item.$id)} />}
           contentContainerStyle={{ padding: 16 }}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={() => (
