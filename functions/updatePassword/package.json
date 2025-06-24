@@ -1,0 +1,9 @@
+{
+  "name": "update-password",
+  "version": "1.0.0",
+  "description": "Fungsi aman untuk mengubah password pengguna.",
+  "main": "src/index.js",
+  "dependencies": {
+    "node-appwrite": "^12.0.1"
+  }
+} 
