@@ -1,6 +1,6 @@
 // app/(admin)/manage-users/edit-user/[id].tsx
 
-import { getUserById, updateUser } from '@/lib/appwrite';
+import { getUserById, updateUser, updateUserPassword } from '@/lib/appwrite';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -20,7 +20,10 @@ const EditUserScreen = () => {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPasswordSubmitting, setIsPasswordSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+
+  const [password, setPassword] = useState('');
 
   const [form, setForm] = useState({
     name: '',
@@ -36,13 +39,15 @@ const EditUserScreen = () => {
       setIsLoading(true);
       try {
         const userData = await getUserById(id);
-        setForm({
-          name: userData.name,
-          email: userData.email, // Email tidak bisa diedit
-          age: userData.age.toString(),
-          gender: userData.gender,
-          disease: userData.disease,
-        });
+        if (userData) {
+          setForm({
+            name: userData.name,
+            email: userData.email, // Email tidak bisa diedit
+            age: userData.age ? userData.age.toString() : '',
+            gender: userData.gender,
+            disease: userData.disease,
+          });
+        }
       } catch (error) {
         Alert.alert("Error", "Gagal memuat data pengguna.");
       } finally {
@@ -75,11 +80,29 @@ const EditUserScreen = () => {
     }
   };
 
+  const handlePasswordUpdate = async () => {
+    if (password.length < 8) {
+      Alert.alert("Error", "Password baru harus terdiri dari minimal 8 karakter.");
+      return;
+    }
+    setIsPasswordSubmitting(true);
+    try {
+      await updateUserPassword(id!, password);
+      Alert.alert("Sukses!", "Password pengguna berhasil diperbarui.");
+      setPassword(''); // Kosongkan field setelah berhasil
+    } catch (error: any) {
+      Alert.alert("Error", `Gagal memperbarui password: ${error.message}`);
+    } finally {
+      setIsPasswordSubmitting(false);
+    }
+  };
+
   const diseases = [
     { label: 'Pilih penyakit', value: '' },
     { label: 'Diabetes Melitus', value: 'diabetes_melitus' },
     { label: 'Hipertensi', value: 'hipertensi' },
     { label: 'Kanker', value: 'kanker' },
+    { label: 'Tidak Ada', value: 'tidak_ada' },
   ];
 
   if (isLoading) {
@@ -137,7 +160,33 @@ const EditUserScreen = () => {
             </View>
           </View>
           <TouchableOpacity onPress={handleUpdate} disabled={isSubmitting} className={`py-4 rounded-xl items-center mt-4 ${isSubmitting ? 'bg-gray-400' : 'bg-blue-500'}`}>
-            <Text className="text-white font-bold text-lg">{isSubmitting ? 'Menyimpan...' : 'Simpan Perubahan'}</Text>
+            <Text className="text-white font-bold text-lg">{isSubmitting ? 'Menyimpan...' : 'Simpan Perubahan Detail'}</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Bagian Ganti Password */}
+        <View className="mt-8 pt-6 border-t border-gray-200">
+          <Text className="text-xl font-bold text-gray-800 mb-4">Ganti Password</Text>
+          <View>
+            <Text className="text-base text-gray-600 mb-2">Password Baru</Text>
+            <TextInput 
+              value={password}
+              onChangeText={setPassword}
+              placeholder="Masukkan password baru (min. 8 karakter)"
+              secureTextEntry
+              className="border border-gray-300 p-4 rounded-xl text-base"
+            />
+          </View>
+          <TouchableOpacity 
+            onPress={handlePasswordUpdate} 
+            disabled={isPasswordSubmitting || password.length < 8} 
+            className={`py-4 rounded-xl items-center mt-4 ${(isPasswordSubmitting || password.length < 8) ? 'bg-gray-400' : 'bg-red-500'}`}
+          >
+            {isPasswordSubmitting ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text className="text-white font-bold text-lg">Ubah Password</Text>
+            )}
           </TouchableOpacity>
         </View>
       </ScrollView>

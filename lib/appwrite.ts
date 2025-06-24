@@ -37,6 +37,7 @@ export const config = {
   //functions
   deleteUserFunctionId:process.env.EXPO_PUBLIC_APPWRITE_DELETE_USER_FUNCTION_ID,
   loginlogFunctionId:process.env.EXPO_PUBLIC_APPWRITE_LOGINLOG_FUNCTION_ID,
+  updatePasswordFunctionId: process.env.EXPO_PUBLIC_APPWRITE_UPDATE_PASSWORD_FUNCTION_ID,
 };
 
 // Validasi Konfigurasi
@@ -246,6 +247,26 @@ export async function updateNutritionist(nutritionistId: string, nutritionistDat
     );
   } catch (error) {
     console.error("Gagal memperbarui ahli gizi:", error);
+    throw error;
+  }
+}
+
+//update password
+export async function updateUserPassword(userId: string, password: string): Promise<void> {
+  try {
+    if (!config.updatePasswordFunctionId) {
+      throw new Error("ID Fungsi untuk memperbarui password tidak dikonfigurasi.");
+    }
+
+    await functions.createExecution(
+      config.updatePasswordFunctionId,
+      JSON.stringify({ userId, password }),
+      false
+    );
+    
+    console.log(`Permintaan pembaruan password untuk pengguna ID ${userId} berhasil dikirim.`);
+  } catch (error) {
+    console.error("Gagal memperbarui password:", error);
     throw error;
   }
 }
@@ -517,8 +538,4 @@ export async function getAllNutritionists(): Promise<Models.Document[]> {
         throw error;
     }
 }
-
-// =================================================================
-// edit user dan ahligizi
-// =================================================================
 

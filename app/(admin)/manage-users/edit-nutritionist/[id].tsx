@@ -1,26 +1,29 @@
 // app/(admin)/manage-users/edit-nutritionist/[id].tsx
 
-import { getNutritionistById, updateNutritionist } from '@/lib/appwrite';
+import { getNutritionistById, updateNutritionist, updateUserPassword } from '@/lib/appwrite';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    SafeAreaView,
-    ScrollView,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  SafeAreaView,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 const EditNutritionistScreen = () => {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPasswordSubmitting, setIsPasswordSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+
+  const [password, setPassword] = useState('');
 
   const [form, setForm] = useState({
     name: '',
@@ -35,12 +38,14 @@ const EditNutritionistScreen = () => {
       setIsLoading(true);
       try {
         const nutritionistData = await getNutritionistById(id);
-        setForm({
-          name: nutritionistData.name,
-          email: nutritionistData.email, // Email tidak bisa diedit
-          gender: nutritionistData.gender,
-          specialization: nutritionistData.specialization,
-        });
+        if (nutritionistData) {
+            setForm({
+              name: nutritionistData.name,
+              email: nutritionistData.email,
+              gender: nutritionistData.gender,
+              specialization: nutritionistData.specialization,
+            });
+        }
       } catch (error) {
         Alert.alert("Error", "Gagal memuat data ahli gizi.");
       } finally {
@@ -52,7 +57,7 @@ const EditNutritionistScreen = () => {
 
   const handleUpdate = async () => {
     if (!form.name || !form.gender || !form.specialization) {
-      Alert.alert("Input Tidak Lengkap", "Semua kolom wajib diisi kecuali email.");
+      Alert.alert("Input Tidak Lengkap", "Nama, Jenis Kelamin, dan Spesialisasi wajib diisi.");
       return;
     }
     setIsSubmitting(true);
@@ -69,6 +74,23 @@ const EditNutritionistScreen = () => {
       Alert.alert("Error", `Gagal memperbarui: ${error.message}`);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handlePasswordUpdate = async () => {
+    if (password.length < 8) {
+      Alert.alert("Error", "Password baru harus terdiri dari minimal 8 karakter.");
+      return;
+    }
+    setIsPasswordSubmitting(true);
+    try {
+      await updateUserPassword(id!, password);
+      Alert.alert("Sukses!", "Password ahli gizi berhasil diperbarui.");
+      setPassword('');
+    } catch (error: any) {
+      Alert.alert("Error", `Gagal memperbarui password: ${error.message}`);
+    } finally {
+      setIsPasswordSubmitting(false);
     }
   };
 
@@ -128,7 +150,33 @@ const EditNutritionistScreen = () => {
             </View>
           </View>
           <TouchableOpacity onPress={handleUpdate} disabled={isSubmitting} className={`py-4 rounded-xl items-center mt-4 ${isSubmitting ? 'bg-gray-400' : 'bg-green-500'}`}>
-            <Text className="text-white font-bold text-lg">{isSubmitting ? 'Menyimpan...' : 'Simpan Perubahan'}</Text>
+            <Text className="text-white font-bold text-lg">{isSubmitting ? 'Menyimpan...' : 'Simpan Perubahan Detail'}</Text>
+          </TouchableOpacity>
+        </View>
+        
+        {/* Bagian Ganti Password */}
+        <View className="mt-8 pt-6 border-t border-gray-200">
+          <Text className="text-xl font-bold text-gray-800 mb-4">Ganti Password</Text>
+          <View>
+            <Text className="text-base text-gray-600 mb-2">Password Baru</Text>
+            <TextInput 
+              value={password}
+              onChangeText={setPassword}
+              placeholder="Masukkan password baru (min. 8 karakter)"
+              secureTextEntry
+              className="border border-gray-300 p-4 rounded-xl text-base"
+            />
+          </View>
+          <TouchableOpacity 
+            onPress={handlePasswordUpdate} 
+            disabled={isPasswordSubmitting || password.length < 8} 
+            className={`py-4 rounded-xl items-center mt-4 ${(isPasswordSubmitting || password.length < 8) ? 'bg-gray-400' : 'bg-red-500'}`}
+          >
+            {isPasswordSubmitting ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text className="text-white font-bold text-lg">Ubah Password</Text>
+            )}
           </TouchableOpacity>
         </View>
       </ScrollView>
