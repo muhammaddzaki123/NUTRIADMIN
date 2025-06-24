@@ -6,14 +6,14 @@ import { Picker } from '@react-native-picker/picker';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    SafeAreaView,
-    ScrollView,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  SafeAreaView,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 const AddNutritionistScreen = () => {
@@ -25,18 +25,18 @@ const AddNutritionistScreen = () => {
     email: '',
     password: '',
     specialization: '',
+    gender: '', // Tambahkan state untuk gender
   });
 
   const handleCreate = async () => {
-    // Pengecekan diubah menjadi !form.specialization
-    if (!form.name || !form.email || !form.password || !form.specialization) {
+    // Tambahkan pengecekan untuk gender
+    if (!form.name || !form.email || !form.password || !form.specialization || !form.gender) {
       Alert.alert("Input Tidak Lengkap", "Semua kolom wajib diisi.");
       return;
     }
 
     setIsSubmitting(true);
     try {
-      // PERUBAHAN 2: Hapus .toLowerCase() karena form.specialization sudah bernilai benar
       await createNewNutritionist({
         ...form
       });
@@ -55,7 +55,6 @@ const AddNutritionistScreen = () => {
     }
   };
 
-  // PERUBAHAN 1: Ubah menjadi array objek { label, value }
   const specializations = [
     { label: 'Pilih spesialisasi', value: '' },
     { label: 'Diabetes Melitus', value: 'diabetes_melitus' },
@@ -89,10 +88,26 @@ const AddNutritionistScreen = () => {
             <Text className="text-base text-gray-600 mb-2">Password</Text>
             <TextInput value={form.password} onChangeText={(e) => setForm({ ...form, password: e })} placeholder="Buat password" secureTextEntry className="border border-gray-300 p-4 rounded-xl text-base" />
           </View>
+          
+          {/* Tambahkan input untuk Jenis Kelamin */}
+          <View>
+            <Text className="text-base text-gray-600 mb-2">Jenis Kelamin</Text>
+            <View className="border border-gray-300 rounded-xl">
+               <Picker
+                  selectedValue={form.gender}
+                  onValueChange={(val) => setForm({ ...form, gender: val })}
+                  style={{ height: 56 }}
+                >
+                  <Picker.Item label="Pilih Jenis Kelamin" value="" />
+                  <Picker.Item label="Laki-laki" value="Laki-laki" />
+                  <Picker.Item label="Perempuan" value="Perempuan" />
+                </Picker>
+            </View>
+          </View>
+
           <View>
             <Text className="text-base text-gray-600 mb-2">Spesialisasi</Text>
             <View className="border border-gray-300 rounded-xl">
-              {/* PERUBAHAN 3: Render Picker dari array objek */}
               <Picker selectedValue={form.specialization} onValueChange={(val) => setForm({ ...form, specialization: val })} style={{ height: 56 }}>
                 {specializations.map((s) => <Picker.Item key={s.value} label={s.label} value={s.value} />)}
               </Picker>

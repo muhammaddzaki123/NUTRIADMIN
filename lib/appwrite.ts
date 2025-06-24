@@ -470,3 +470,36 @@ export async function getAllNutritionists(): Promise<Models.Document[]> {
         throw error;
     }
 }
+
+// =================================================================
+// edit user dan ahligizi data
+// =================================================================
+// Fungsi baru untuk mendapatkan data pengguna berdasarkan ID
+export async function getUserById(userId: string): Promise<Models.Document> {
+  try {
+    const user = await databases.getDocument(
+      config.databaseId!,
+      config.usersProfileCollectionId!,
+      userId
+    );
+    return user;
+  } catch (error) {
+    console.error(`Gagal mengambil pengguna dengan ID: ${userId}`, error);
+    throw error;
+  }
+}
+
+// Fungsi baru untuk memperbarui data pengguna
+export async function updateUser(userId: string, userData: Partial<{ name: string; age: string; gender: string; disease: string; }>) {
+  try {
+    await databases.updateDocument(
+      config.databaseId!,
+      config.usersProfileCollectionId!,
+      userId,
+      userData
+    );
+  } catch (error) {
+    console.error("Gagal memperbarui pengguna:", error);
+    throw error;
+  }
+}
