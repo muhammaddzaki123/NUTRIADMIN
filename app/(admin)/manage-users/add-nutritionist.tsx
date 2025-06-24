@@ -24,20 +24,21 @@ const AddNutritionistScreen = () => {
     name: '',
     email: '',
     password: '',
-    specialization: 'Pilih spesialisasi',
+    specialization: '',
   });
 
   const handleCreate = async () => {
-    if (!form.name || !form.email || !form.password || form.specialization === 'Pilih spesialisasi') {
+    // Pengecekan diubah menjadi !form.specialization
+    if (!form.name || !form.email || !form.password || !form.specialization) {
       Alert.alert("Input Tidak Lengkap", "Semua kolom wajib diisi.");
       return;
     }
 
     setIsSubmitting(true);
     try {
+      // PERUBAHAN 2: Hapus .toLowerCase() karena form.specialization sudah bernilai benar
       await createNewNutritionist({
-        ...form,
-        specialization: form.specialization.toLowerCase(),
+        ...form
       });
 
       Alert.alert(
@@ -54,7 +55,13 @@ const AddNutritionistScreen = () => {
     }
   };
 
-  const specializations = ['Pilih spesialisasi', 'Diabetes', 'Hipertensi', 'Kanker'];
+  // PERUBAHAN 1: Ubah menjadi array objek { label, value }
+  const specializations = [
+    { label: 'Pilih spesialisasi', value: '' },
+    { label: 'Diabetes Melitus', value: 'diabetes_melitus' },
+    { label: 'Hipertensi', value: 'hipertensi' },
+    { label: 'Kanker', value: 'kanker' }
+  ];
 
   return (
     <SafeAreaView className="flex-1 bg-white">
@@ -85,8 +92,9 @@ const AddNutritionistScreen = () => {
           <View>
             <Text className="text-base text-gray-600 mb-2">Spesialisasi</Text>
             <View className="border border-gray-300 rounded-xl">
+              {/* PERUBAHAN 3: Render Picker dari array objek */}
               <Picker selectedValue={form.specialization} onValueChange={(val) => setForm({ ...form, specialization: val })} style={{ height: 56 }}>
-                {specializations.map((s) => <Picker.Item key={s} label={s} value={s} />)}
+                {specializations.map((s) => <Picker.Item key={s.value} label={s.label} value={s.value} />)}
               </Picker>
             </View>
           </View>

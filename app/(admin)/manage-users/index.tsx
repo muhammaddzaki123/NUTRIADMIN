@@ -2,6 +2,8 @@
 
 import { config, databases, deleteNutritionist, deleteUser } from '@/lib/appwrite';
 import { useAppwrite } from '@/lib/useAppwrite';
+// PERUBAHAN 1: Impor fungsi formatDiseaseName
+import { formatDiseaseName } from '@/utils/format';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -26,6 +28,7 @@ interface AppAccount extends Models.Document {
 
 type ActiveTab = 'users' | 'nutritionists';
 
+// PERUBAHAN 2: Format disease dan specialization di dalam komponen
 const UserListItem = ({ item, type, onDelete }: { item: AppAccount; type: ActiveTab; onDelete: () => void; }) => (
   <View className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-4">
     <View className="flex-row items-center">
@@ -50,10 +53,10 @@ const UserListItem = ({ item, type, onDelete }: { item: AppAccount; type: Active
       </TouchableOpacity>
     </View>
     {item.disease && (
-      <Text className="text-sm text-gray-500 mt-2 pt-2 border-t border-gray-100">Penyakit: {item.disease}</Text>
+      <Text className="text-sm text-gray-500 mt-2 pt-2 border-t border-gray-100">Penyakit: {formatDiseaseName(item.disease)}</Text>
     )}
     {item.specialization && (
-      <Text className="text-sm text-gray-500 mt-2 pt-2 border-t border-gray-100">Spesialisasi: {item.specialization}</Text>
+      <Text className="text-sm text-gray-500 mt-2 pt-2 border-t border-gray-100">Spesialisasi: {formatDiseaseName(item.specialization)}</Text>
     )}
   </View>
 );
@@ -73,12 +76,17 @@ const ManageUsersScreen = () => {
     fn: () => databases.listDocuments<AppAccount>(config.databaseId!, config.ahligiziCollectionId!)
   });
   
+  // PERUBAHAN 3: Ubah cara filter dibuat untuk memisahkan label dan value
   const diseaseFilters = useMemo(() => {
     if (!usersResponse?.documents) return [];
     const allDiseases = usersResponse.documents
       .map(user => user.disease)
       .filter((disease): disease is string => !!disease);
-    return ['Semua', ...Array.from(new Set(allDiseases))];
+    const uniqueDiseases = Array.from(new Set(allDiseases));
+    return [
+        { label: 'Semua', value: null },
+        ...uniqueDiseases.map(disease => ({ label: formatDiseaseName(disease), value: disease }))
+    ];
   }, [usersResponse]);
 
   const specializationFilters = useMemo(() => {
@@ -86,22 +94,25 @@ const ManageUsersScreen = () => {
     const allSpecializations = nutritionistsResponse.documents
       .map(n => n.specialization)
       .filter((spec): spec is string => !!spec);
-    return ['Semua', ...Array.from(new Set(allSpecializations))];
+    const uniqueSpecs = Array.from(new Set(allSpecializations));
+    return [
+        { label: 'Semua', value: null },
+        ...uniqueSpecs.map(spec => ({ label: formatDiseaseName(spec), value: spec }))
+    ];
   }, [nutritionistsResponse]);
 
   const displayedData = useMemo(() => {
     if (activeTab === 'users') {
-      if (!selectedDisease || selectedDisease === 'Semua') {
+      if (!selectedDisease) {
         return usersResponse?.documents || [];
       }
       return usersResponse?.documents.filter(user => user.disease === selectedDisease) || [];
     }
     
     if (activeTab === 'nutritionists') {
-      if (!selectedSpecialization || selectedSpecialization === 'Semua') {
+      if (!selectedSpecialization) {
         return nutritionistsResponse?.documents || [];
       }
-      // PERBAIKAN DI SINI
       return nutritionistsResponse?.documents.filter(n => n.specialization === selectedSpecialization) || [];
     }
     
@@ -180,15 +191,16 @@ const ManageUsersScreen = () => {
         </View>
       </View>
       
+      {/* PERUBAHAN 4: Logika render filter disesuaikan */}
       {activeTab === 'users' && diseaseFilters.length > 1 && (
         <View className="px-4 pt-3 bg-white pb-3 border-b border-gray-200">
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {diseaseFilters.map((disease) => 
+            {diseaseFilters.map((filter) => 
               <FilterCard 
-                key={disease} 
-                title={disease}
-                isActive={(selectedDisease === null && disease === 'Semua') || selectedDisease === disease}
-                onPress={() => setSelectedDisease(disease === 'Semua' ? null : disease)}
+                key={filter.value || 'semua'} 
+                title={filter.label}
+                isActive={selectedDisease === filter.value}
+                onPress={() => setSelectedDisease(filter.value)}
               />
             )}
           </ScrollView>
@@ -198,12 +210,12 @@ const ManageUsersScreen = () => {
       {activeTab === 'nutritionists' && specializationFilters.length > 1 && (
         <View className="px-4 pt-3 bg-white pb-3 border-b border-gray-200">
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {specializationFilters.map((spec) => 
+            {specializationFilters.map((filter) => 
               <FilterCard 
-                key={spec} 
-                title={spec}
-                isActive={(selectedSpecialization === null && spec === 'Semua') || selectedSpecialization === spec}
-                onPress={() => setSelectedSpecialization(spec === 'Semua' ? null : spec)}
+                key={filter.value || 'semua'} 
+                title={filter.label}
+                isActive={selectedSpecialization === filter.value}
+                onPress={() => setSelectedSpecialization(filter.value)}
               />
             )}
           </ScrollView>

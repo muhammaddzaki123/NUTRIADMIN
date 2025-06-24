@@ -1,5 +1,3 @@
-// app/(admin)/index.tsx
-
 import {
   getAllArticles,
   getAllNutritionists,
@@ -12,6 +10,7 @@ import {
 } from '@/lib/appwrite';
 import { useGlobalContext } from '@/lib/global-provider';
 import { useAppwrite } from '@/lib/useAppwrite';
+import { formatDiseaseName } from '@/utils/format';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
@@ -98,7 +97,10 @@ const AdminDashboard = () => {
     }
 
     const counts = data.reduce((acc: Record<string, number>, item: Models.Document & { [key: string]: any }) => {
-      const category = item[groupBy] ? (item[groupBy] as string).charAt(0).toUpperCase() + (item[groupBy] as string).slice(1) : defaultCategory;
+      // PERUBAHAN 2: Gunakan formatDiseaseName untuk mendapatkan kategori yang diformat
+      const categoryValue = item[groupBy] as string;
+      const category = categoryValue ? formatDiseaseName(categoryValue) : defaultCategory;
+      
       acc[category] = (acc[category] || 0) + 1;
       return acc;
     }, {});
@@ -145,9 +147,9 @@ const AdminDashboard = () => {
           </TouchableOpacity>
         </View>
         <View className="flex-row justify-around mb-8">
-           <TouchableOpacity onPress={() => formatAndShowAlert("Ringkasan Ahli Gizi", allNutritionists, "specialization", "Umum")} className="flex-1">
-            <StatCard iconName="fitness-outline" title="Total Ahli Gizi" value={nutritionistsCount?.toString() || '0'} color="#F97316" />
-           </TouchableOpacity>
+            <TouchableOpacity onPress={() => formatAndShowAlert("Ringkasan Ahli Gizi", allNutritionists, "specialization", "Umum")} className="flex-1">
+              <StatCard iconName="fitness-outline" title="Total Ahli Gizi" value={nutritionistsCount?.toString() || '0'} color="#F97316" />
+            </TouchableOpacity>
         </View>
 
         {/* Aksi Cepat */}

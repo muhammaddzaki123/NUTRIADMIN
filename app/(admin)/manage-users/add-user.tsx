@@ -6,14 +6,14 @@ import { Picker } from '@react-native-picker/picker';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    SafeAreaView,
-    ScrollView,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  SafeAreaView,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 const AddUserScreen = () => {
@@ -27,21 +27,21 @@ const AddUserScreen = () => {
     password: '',
     age: '',
     gender: '',
-    disease: 'Pilih penyakit', // Nilai awal untuk Picker
+    disease: '', // Diubah menjadi string kosong
   });
 
   const handleCreateUser = async () => {
-    // Validasi input
-    if (!form.name || !form.email || !form.password || !form.age || !form.gender || form.disease === 'Pilih penyakit') {
+    // Validasi input diubah menjadi !form.disease
+    if (!form.name || !form.email || !form.password || !form.age || !form.gender || !form.disease) {
       Alert.alert("Input Tidak Lengkap", "Semua kolom wajib diisi.");
       return;
     }
 
     setIsSubmitting(true);
     try {
+      // PERUBAHAN 2: Hapus .toLowerCase() karena nilai form.disease sudah benar
       await createNewUser({
         ...form,
-        disease: form.disease.toLowerCase(), // Simpan dalam format lowercase
       });
 
       Alert.alert(
@@ -58,7 +58,13 @@ const AddUserScreen = () => {
     }
   };
 
-  const diseases = ['Pilih penyakit', 'Diabetes', 'Hipertensi', 'Kanker'];
+  // PERUBAHAN 1: Ubah menjadi array objek { label, value }
+  const diseases = [
+    { label: 'Pilih penyakit', value: '' },
+    { label: 'Diabetes Melitus', value: 'diabetes_melitus' },
+    { label: 'Hipertensi', value: 'hipertensi' },
+    { label: 'Kanker', value: 'kanker' }
+  ];
 
   return (
     <SafeAreaView className="flex-1 bg-white">
@@ -151,12 +157,13 @@ const AddUserScreen = () => {
           <View>
             <Text className="text-base text-gray-600 mb-2">Riwayat Penyakit</Text>
             <View className="border border-gray-300 rounded-xl">
+              {/* PERUBAHAN 3: Render Picker dari array objek */}
               <Picker
                 selectedValue={form.disease}
                 onValueChange={(val) => setForm({ ...form, disease: val })}
                 style={{ height: 56 }}
               >
-                {diseases.map((d) => <Picker.Item key={d} label={d} value={d} />)}
+                {diseases.map((d) => <Picker.Item key={d.value} label={d.label} value={d.value} />)}
               </Picker>
             </View>
           </View>
