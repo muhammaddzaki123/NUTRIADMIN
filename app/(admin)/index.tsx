@@ -34,7 +34,7 @@ const StatCard = ({ iconName, title, value, color }: { iconName: keyof typeof Io
 );
 
 const AdminDashboard = () => {
-  const { admin } = useGlobalContext();
+  const { admin, refetch: refetchGlobalContext } = useGlobalContext();
   const router = useRouter();
 
   // Mengambil data hitungan
@@ -61,7 +61,8 @@ const AdminDashboard = () => {
   };
 
   const handleLogout = async () => {
-    await logout();
+    await logout(); 
+    await refetchGlobalContext();
     router.replace('/sign-in');
   };
 
