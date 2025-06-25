@@ -55,6 +55,19 @@ const AdminTabLayout = () => {
             ),
           }}
         />
+        <Tabs.Screen
+          name="edit-disease-info"
+          options={{
+            title: 'diases info',
+            tabBarIcon: ({ color, focused, size }) => (
+              <Ionicons
+                name={focused ? 'medkit' : 'medkit-outline'}
+                size={size}
+                color={color}
+              />
+            ),
+          }}
+        />
       </Tabs>
     </GestureHandlerRootView>
   );
