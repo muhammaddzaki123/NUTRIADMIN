@@ -37,6 +37,7 @@ export const config = {
   //functions
   deleteUserFunctionId:process.env.EXPO_PUBLIC_APPWRITE_DELETE_USER_FUNCTION_ID,
   updatePasswordFunctionId: process.env.EXPO_PUBLIC_APPWRITE_UPDATE_PASSWORD_FUNCTION_ID,
+  loginlogFunctionId:process.env.EXPO_PUBLIC_APPWRITE_LOGINLOG_FUNCTION_ID,
 };
 
 // Validasi Konfigurasi
@@ -411,6 +412,26 @@ async function getAllUserAndNutritionistIds(): Promise<string[]> {
   }
 }
 
+// =================================================================
+// LAYANAN LOGGING
+// =================================================================
+export async function getLoginLogs(): Promise<Models.Document[]> {
+  try {
+    if (!config.loginlogCollectionId) {
+      throw new Error("ID Koleksi untuk Login Log belum diatur.");
+    }
+
+    const logs = await databases.listDocuments(
+      config.databaseId!,
+      config.loginlogCollectionId,
+      [Query.orderDesc("$createdAt"), Query.limit(100)]
+    );
+    return logs.documents;
+  } catch (error) {
+    console.error("Gagal mengambil log login:", error);
+    throw error;
+  }
+}
 
 // =================================================================
 // LAYANAN STATISTIK DASBOR
