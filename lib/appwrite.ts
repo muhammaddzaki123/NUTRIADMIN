@@ -33,6 +33,7 @@ export const config = {
   ahligiziCollectionId:process.env.EXPO_PUBLIC_APPWRITE_AHLIGIZI_COLLECTION_ID,
   notificationsCollectionId:process.env.EXPO_PUBLIC_APPWRITE_NOTIFICATION_COLLECTION_ID,
   loginlogCollectionId:process.env.EXPO_PUBLIC_APPWRITE_LOGINLOG_COLLECTION_ID,
+  diseaseInformationCollectionId:process.env.EXPO_PUBLIC_APPWRITE_DIASES_INFORMATION_COLLECTION_ID,
   
   //functions
   deleteUserFunctionId:process.env.EXPO_PUBLIC_APPWRITE_DELETE_USER_FUNCTION_ID,
@@ -539,3 +540,58 @@ export async function getAllNutritionists(): Promise<Models.Document[]> {
     }
 }
 
+// =================================================================
+// LAYANAN MANAJEMEN INFORMASI PENYAKIT (ADMIN)
+// =================================================================
+
+/**
+ * Mengambil semua dokumen informasi penyakit dari database.
+ */
+export async function getAllDiseaseInfo(): Promise<Models.Document[]> {
+  try {
+    const response = await databases.listDocuments(
+      config.databaseId!,
+      config.diseaseInformationCollectionId!, // Pastikan ID koleksi ini benar
+      [Query.orderAsc('title')] // Urutkan berdasarkan judul
+    );
+    return response.documents;
+  } catch (error) {
+    console.error("Gagal mengambil semua data informasi penyakit:", error);
+    throw error;
+  }
+}
+
+/**
+ * Mengambil satu dokumen informasi penyakit berdasarkan ID dokumennya.
+ */
+export async function getDiseaseInfoById(documentId: string): Promise<Models.Document> {
+  try {
+    return await databases.getDocument(
+      config.databaseId!,
+      config.diseaseInformationCollectionId!,
+      documentId
+    );
+  } catch (error) {
+    console.error(`Gagal mengambil data informasi penyakit dengan ID: ${documentId}`, error);
+    throw error;
+  }
+}
+
+/**
+ * Memperbarui dokumen informasi penyakit.
+ * @param documentId ID dokumen yang akan diperbarui.
+ * @param data Data baru (title dan content dalam bentuk string JSON).
+ */
+export async function updateDiseaseInfo(documentId: string, data: { title: string; content: string; }) {
+  try {
+    return await databases.updateDocument(
+      config.databaseId!,
+      config.diseaseInformationCollectionId!,
+      documentId,
+      data
+    );
+  } catch (error) {
+    console.error("Gagal memperbarui informasi penyakit:", error);
+    throw error;
+  }
+}
