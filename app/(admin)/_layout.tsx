@@ -55,19 +55,19 @@ const AdminTabLayout = () => {
             ),
           }}
         />
-        <Tabs.Screen
-          name="edit-disease-info"
-          options={{
-            title: 'diases info',
-            tabBarIcon: ({ color, focused, size }) => (
-              <Ionicons
-                name={focused ? 'medkit' : 'medkit-outline'}
-                size={size}
-                color={color}
-              />
-            ),
-          }}
-        />
+      <Tabs.Screen
+        name="edit-disease-info" // Sekarang ini akan merujuk ke grup yang sudah punya layout sendiri
+        options={{
+          title: 'Info Penyakit', // Ganti judul agar lebih deskriptif
+          tabBarIcon: ({ color, focused, size }) => (
+            <Ionicons
+              name={focused ? 'medkit' : 'medkit-outline'}
+              size={size}
+              color={color}
+            />
+          ),
+        }}
+      />
       </Tabs>
     </GestureHandlerRootView>
   );
