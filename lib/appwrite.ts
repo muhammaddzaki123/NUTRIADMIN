@@ -32,13 +32,11 @@ export const config = {
   usersProfileCollectionId:process.env.EXPO_PUBLIC_APPWRITE_USERS_PROFILE_COLLECTION_ID,
   ahligiziCollectionId:process.env.EXPO_PUBLIC_APPWRITE_AHLIGIZI_COLLECTION_ID,
   notificationsCollectionId:process.env.EXPO_PUBLIC_APPWRITE_NOTIFICATION_COLLECTION_ID,
-  loginlogCollectionId:process.env.EXPO_PUBLIC_APPWRITE_LOGINLOG_COLLECTION_ID,
   diseaseInformationCollectionId:process.env.EXPO_PUBLIC_APPWRITE_DIASES_INFORMATION_COLLECTION_ID,
   
   //functions
   deleteUserFunctionId:process.env.EXPO_PUBLIC_APPWRITE_DELETE_USER_FUNCTION_ID,
   updatePasswordFunctionId: process.env.EXPO_PUBLIC_APPWRITE_UPDATE_PASSWORD_FUNCTION_ID,
-  loginlogFunctionId:process.env.EXPO_PUBLIC_APPWRITE_LOGINLOG_FUNCTION_ID,
 };
 
 // Validasi Konfigurasi
@@ -414,27 +412,6 @@ async function getAllUserAndNutritionistIds(): Promise<string[]> {
 }
 
 // =================================================================
-// LAYANAN LOGGING
-// =================================================================
-export async function getLoginLogs(): Promise<Models.Document[]> {
-  try {
-    if (!config.loginlogCollectionId) {
-      throw new Error("ID Koleksi untuk Login Log belum diatur.");
-    }
-
-    const logs = await databases.listDocuments(
-      config.databaseId!,
-      config.loginlogCollectionId,
-      [Query.orderDesc("$createdAt"), Query.limit(100)]
-    );
-    return logs.documents;
-  } catch (error) {
-    console.error("Gagal mengambil log login:", error);
-    throw error;
-  }
-}
-
-// =================================================================
 // LAYANAN STATISTIK DASBOR
 // =================================================================
 
@@ -446,7 +423,7 @@ export async function getUsersCount(): Promise<number> {
     const response = await databases.listDocuments(
       config.databaseId!,
       config.usersProfileCollectionId!,
-      [Query.limit(1)] // PERBAIKAN: Ubah dari 0 menjadi 1
+      [Query.limit(1)]
     );
     return response.total;
   } catch (error) {
@@ -463,7 +440,7 @@ export async function getArticlesCount(): Promise<number> {
     const response = await databases.listDocuments(
       config.databaseId!,
       config.artikelCollectionId!,
-      [Query.limit(1)] // PERBAIKAN: Ubah dari 0 menjadi 1
+      [Query.limit(1)] 
     );
     return response.total;
   } catch (error) {
@@ -480,7 +457,7 @@ export async function getNutritionistsCount(): Promise<number> {
     const response = await databases.listDocuments(
       config.databaseId!,
       config.ahligiziCollectionId!,
-      [Query.limit(1)] // PERBAIKAN: Ubah dari 0 menjadi 1
+      [Query.limit(1)]
     );
     return response.total;
   } catch (error) {
@@ -497,7 +474,7 @@ export async function getAllUsers(): Promise<Models.Document[]> {
     const data = await databases.listDocuments(
       config.databaseId!,
       config.usersProfileCollectionId!,
-      [Query.limit(5000)] // Atur batas yang cukup tinggi
+      [Query.limit(5000)]
     );
     return data.documents;
   } catch (error) {
@@ -551,8 +528,8 @@ export async function getAllDiseaseInfo(): Promise<Models.Document[]> {
   try {
     const response = await databases.listDocuments(
       config.databaseId!,
-      config.diseaseInformationCollectionId!, // Pastikan ID koleksi ini benar
-      [Query.orderAsc('title')] // Urutkan berdasarkan judul
+      config.diseaseInformationCollectionId!,
+      [Query.orderAsc('title')]
     );
     return response.documents;
   } catch (error) {
@@ -577,11 +554,7 @@ export async function getDiseaseInfoById(documentId: string): Promise<Models.Doc
   }
 }
 
-/**
- * Memperbarui dokumen informasi penyakit.
- * @param documentId ID dokumen yang akan diperbarui.
- * @param data Data baru (title dan content dalam bentuk string JSON).
- */
+
 export async function updateDiseaseInfo(documentId: string, data: { title: string; content: string; }) {
   try {
     return await databases.updateDocument(

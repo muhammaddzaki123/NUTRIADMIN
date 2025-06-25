@@ -1,5 +1,3 @@
-// lib/notification-service.ts
-
 import { CreateNotificationParams } from '../types/notification';
 import { config, databases } from './appwrite';
 

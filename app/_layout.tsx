@@ -19,7 +19,7 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    const SPLASH_TIMEOUT = 5000; // 5 seconds maximum wait time
+    const SPLASH_TIMEOUT = 5000;
     let timeoutId: ReturnType<typeof setTimeout>;
 
     const loadApp = async () => {

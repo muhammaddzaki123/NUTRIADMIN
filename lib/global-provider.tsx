@@ -1,5 +1,3 @@
-// lib/global-provider.tsx
-
 import React, { createContext, ReactNode, useContext } from "react";
 import { getCurrentUser, Admin } from "./appwrite";
 import { useAppwrite } from "./useAppwrite";

@@ -3,7 +3,6 @@ import {
   getAllNutritionists,
   getAllUsers,
   getArticlesCount,
-  getLoginLogs,
   getNutritionistsCount,
   getUsersCount,
   logout
@@ -26,32 +25,11 @@ import {
 } from 'react-native';
 import { Models } from 'react-native-appwrite';
 
-// Komponen StatCard dan LogListItem tidak berubah
 const StatCard = ({ iconName, title, value, color }: { iconName: keyof typeof Ionicons.glyphMap; title: string; value: string; color: string }) => (
   <View className="flex-1 bg-white p-4 rounded-2xl shadow-md shadow-black/10 items-center mx-2">
     <Ionicons name={iconName} size={32} color={color} />
     <Text className="text-3xl font-bold mt-2 text-gray-800">{value}</Text>
     <Text className="text-sm text-gray-500 mt-1">{title}</Text>
-  </View>
-);
-
-const LogListItem = ({ item }: { item: Models.Document }) => (
-  <View className="bg-white p-3 mb-3 rounded-lg flex-row items-center justify-between shadow-sm border border-gray-100">
-    <View className="flex-row items-center flex-1">
-      <Ionicons 
-        name={item.userType === 'user' ? 'person-circle-outline' : 'fitness-outline'} 
-        size={32} 
-        color={item.userType === 'user' ? '#3B82F6' : '#10B981'}
-        className="mr-3"
-      />
-      <View>
-        <Text className="font-bold text-base">{item.name}</Text>
-        <Text className="text-xs text-gray-600">{item.email}</Text>
-      </View>
-    </View>
-    <Text className="text-xs text-gray-400 pl-2">
-      {new Date(item.$createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-    </Text>
   </View>
 );
 
@@ -68,9 +46,8 @@ const AdminDashboard = () => {
   const { data: allUsers, loading: usersLoading, refetch: refetchAllUsers } = useAppwrite({ fn: getAllUsers });
   const { data: allArticles, loading: articlesLoading, refetch: refetchAllArticles } = useAppwrite({ fn: getAllArticles });
   const { data: allNutritionists, loading: nutritionistsLoading, refetch: refetchAllNutritionists } = useAppwrite({ fn: getAllNutritionists });
-  const { data: loginLogs, loading: logsLoading, refetch: refetchLogs } = useAppwrite({ fn: getLoginLogs });
 
-  const isContentLoading = usersLoading || articlesLoading || nutritionistsLoading || logsLoading;
+  const isContentLoading = usersLoading || articlesLoading || nutritionistsLoading;
 
   const handleRefresh = async () => {
     await Promise.all([
@@ -80,7 +57,6 @@ const AdminDashboard = () => {
       refetchAllUsers(),
       refetchAllArticles(),
       refetchAllNutritionists(),
-      refetchLogs(),
     ]);
   };
 
@@ -97,7 +73,6 @@ const AdminDashboard = () => {
     }
 
     const counts = data.reduce((acc: Record<string, number>, item: Models.Document & { [key: string]: any }) => {
-      // PERUBAHAN 2: Gunakan formatDiseaseName untuk mendapatkan kategori yang diformat
       const categoryValue = item[groupBy] as string;
       const category = categoryValue ? formatDiseaseName(categoryValue) : defaultCategory;
       
@@ -163,23 +138,6 @@ const AdminDashboard = () => {
           </TouchableOpacity>
         </View>
         
-        {/* Aktivitas Login Terakhir */}
-        <View className="mt-8">
-          <Text className="text-xl font-semibold text-gray-700 mb-4">Aktivitas Login Terakhir</Text>
-          
-          {logsLoading && !loginLogs?.length ? (
-            <ActivityIndicator size="large" color="#0BBEBB" />
-          ) : (
-            loginLogs && loginLogs.length > 0 ? (
-              loginLogs.map((log) => <LogListItem key={log.$id} item={log} />)
-            ) : (
-              <View className="items-center justify-center p-4 bg-white rounded-lg">
-                <Ionicons name="shield-checkmark-outline" size={32} color="gray" />
-                <Text className="text-gray-500 mt-2">Belum ada aktivitas login.</Text>
-              </View>
-            )
-          )}
-        </View>
       </ScrollView>
     </SafeAreaView>
   );
