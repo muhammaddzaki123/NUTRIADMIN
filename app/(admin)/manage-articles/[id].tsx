@@ -29,12 +29,13 @@ const EditArticleScreen = () => {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   
-  const [form, setForm] = useState<Partial<Omit<CreateArticleData, 'tags' | 'image'>> & { tags: string }>({
+  const [form, setForm] = useState({
     title: '',
     description: '',
     content: '',
-    category: 'nutrisi',
+    category: 'nutrisi' as ArticleCategory,
     tags: '',
+    author: '',
     isPublished: true,
   });
   
@@ -57,7 +58,8 @@ const EditArticleScreen = () => {
             description: articleData.description,
             content: articleData.content,
             category: articleData.category,
-            tags: articleData.tags.join(', '), 
+            tags: articleData.tags.join(', '),
+            author: articleData.author,
             isPublished: articleData.isPublished,
           });
           setCurrentImageUrl(articleData.image);
@@ -75,7 +77,7 @@ const EditArticleScreen = () => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
-      aspect: [16, 9],
+      // aspect: [16, 9],
       quality: 0.7,
     });
     if (!result.canceled) {
@@ -85,8 +87,8 @@ const EditArticleScreen = () => {
 
   const handleUpdate = async () => {
     if (!id) return;
-    if (!form.title || !form.content) {
-      Alert.alert("Input Tidak Lengkap", "Judul dan Konten wajib diisi.");
+    if (!form.title || !form.content || !form.author) {
+      Alert.alert("Input Tidak Lengkap", "Judul, Konten, dan Penulis wajib diisi.");
       return;
     }
     setIsSubmitting(true);
@@ -151,6 +153,16 @@ const EditArticleScreen = () => {
             />
           </View>
           
+          <View>
+            <Text className="text-base text-gray-600 mb-2">Penulis</Text>
+            <TextInput
+                value={form.author}
+                onChangeText={(e) => setForm({ ...form, author: e })}
+                className="border border-gray-300 p-4 rounded-xl text-base text-black"
+                placeholderTextColor="#9CA3AF"
+            />
+          </View>
+
           <View>
             <Text className="text-base text-gray-600 mb-2">Deskripsi</Text>
             <TextInput 

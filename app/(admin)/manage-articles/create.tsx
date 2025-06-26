@@ -36,6 +36,7 @@ const CreateArticleScreen = () => {
     content: '',
     category: 'nutrisi' as ArticleCategory,
     tags: '',
+    author: '',
   });
 
   const categories: ArticleCategory[] = ['nutrisi', 'diet', 'kesehatan', 'hipertensi', 'diabetes', 'kanker'];
@@ -50,7 +51,7 @@ const CreateArticleScreen = () => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
-      aspect: [16, 9],
+      // aspect: [16, 9],
       quality: 0.7,
     });
 
@@ -60,8 +61,8 @@ const CreateArticleScreen = () => {
   };
 
   const handlePublish = async () => {
-    if (!form.title || !form.content || !form.category) {
-      Alert.alert("Input Tidak Lengkap", "Judul, Konten, dan Kategori wajib diisi.");
+    if (!form.title || !form.content || !form.category || !form.author) {
+      Alert.alert("Input Tidak Lengkap", "Judul, Konten, Kategori dan Penulis wajib diisi.");
       return;
     }
     if (!imageAsset) {
@@ -87,7 +88,6 @@ const CreateArticleScreen = () => {
 
       await publishNewArticle({
         ...form,
-        author: admin.name,
         tags: form.tags.split(',').map(tag => tag.trim()).filter(tag => tag),
         image: image,
         isPublished: true,
@@ -139,9 +139,20 @@ const CreateArticleScreen = () => {
               value={form.title} 
               onChangeText={(e) => setForm({ ...form, title: e })} 
               placeholder="Contoh: Manfaat Sarapan Pagi" 
-              // --- PERBAIKAN ---
               className="border border-gray-300 p-4 rounded-xl text-base text-black" 
               placeholderTextColor="#9CA3AF"
+            />
+          </View>
+
+          {/* Penulis Artikel */}
+          <View>
+            <Text className="text-base text-gray-600 mb-2">Penulis Artikel</Text>
+            <TextInput
+                value={form.author}
+                onChangeText={(e) => setForm({ ...form, author: e })}
+                placeholder="Masukkan nama penulis"
+                className="border border-gray-300 p-4 rounded-xl text-base text-black"
+                placeholderTextColor="#9CA3AF"
             />
           </View>
 
@@ -153,7 +164,6 @@ const CreateArticleScreen = () => {
               onChangeText={(e) => setForm({ ...form, description: e })} 
               placeholder="Ringkasan singkat dari isi artikel" 
               multiline 
-              // --- PERBAIKAN ---
               className="border border-gray-300 p-4 rounded-xl text-base h-24 text-black" 
               style={{ textAlignVertical: 'top' }}
               placeholderTextColor="#9CA3AF"
@@ -168,7 +178,6 @@ const CreateArticleScreen = () => {
               onChangeText={(e) => setForm({ ...form, content: e })} 
               placeholder="Tulis isi lengkap artikel di sini..." 
               multiline 
-              // --- PERBAIKAN ---
               className="border border-gray-300 p-4 rounded-xl text-base h-48 text-black" 
               style={{ textAlignVertical: 'top' }}
               placeholderTextColor="#9CA3AF"
@@ -182,7 +191,6 @@ const CreateArticleScreen = () => {
               <Picker 
                 selectedValue={form.category} 
                 onValueChange={(val: ArticleCategory) => setForm({ ...form, category: val })} 
-                // --- PERBAIKAN ---
                 style={{ height: 56, color: '#000000' }} 
                 dropdownIconColor="#0BBEBB"
               >
@@ -205,7 +213,6 @@ const CreateArticleScreen = () => {
               value={form.tags} 
               onChangeText={(e) => setForm({ ...form, tags: e })} 
               placeholder="diet, sehat, olahraga" 
-              // --- PERBAIKAN ---
               className="border border-gray-300 p-4 rounded-xl text-base text-black"
               placeholderTextColor="#9CA3AF"
             />
