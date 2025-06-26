@@ -42,23 +42,22 @@ const CreateArticleScreen = () => {
   const categories: ArticleCategory[] = ['nutrisi', 'diet', 'kesehatan', 'hipertensi', 'diabetes', 'kanker'];
 
   const pickImage = async () => {
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (permissionResult.granted === false) {
-      Alert.alert("Izin Diperlukan", "Anda perlu memberikan izin akses ke galeri untuk memilih gambar.");
-      return;
-    }
-  
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      // aspect: [16, 9],
-      quality: 0.7,
-    });
+  const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (permissionResult.granted === false) {
+    Alert.alert("Izin Diperlukan", "Anda perlu memberikan izin akses ke galeri untuk memilih gambar.");
+    return;
+  }
 
-    if (!result.canceled) {
-      setImageAsset(result.assets[0]);
-    }
-  };
+let result = await ImagePicker.launchImageLibraryAsync({
+  mediaTypes: ImagePicker.MediaTypeOptions.Images,
+  allowsEditing: true,
+  quality: 1,
+});
+
+  if (!result.canceled) {
+    setImageAsset(result.assets[0]);
+  }
+};
 
   const handlePublish = async () => {
     if (!form.title || !form.content || !form.category || !form.author) {
