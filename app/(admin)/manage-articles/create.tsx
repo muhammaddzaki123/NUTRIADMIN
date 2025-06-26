@@ -1,11 +1,13 @@
 // app/(admin)/manage-articles/create.tsx
 
-import { publishNewArticle, uploadFile, getFilePreview, config } from '@/lib/appwrite';
+import { config, getFilePreview, publishNewArticle, uploadFile } from '@/lib/appwrite';
 import { useGlobalContext } from '@/lib/global-provider';
+import { CreateArticleData } from '@/types/article';
 import { Ionicons } from '@expo/vector-icons';
+import { Picker } from '@react-native-picker/picker';
+import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import * as ImagePicker from 'expo-image-picker';
 import {
   ActivityIndicator,
   Alert,
@@ -17,8 +19,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { Picker } from '@react-native-picker/picker'; // Pastikan Picker diimpor
-import { CreateArticleData } from '@/types/article'; // Impor tipe data
 
 
 type ArticleCategory = CreateArticleData['category'];
@@ -28,7 +28,6 @@ const CreateArticleScreen = () => {
   const { admin } = useGlobalContext();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // State untuk menampung data gambar yang dipilih
   const [imageAsset, setImageAsset] = useState<ImagePicker.ImagePickerAsset | null>(null);
 
   const [form, setForm] = useState({
@@ -41,9 +40,7 @@ const CreateArticleScreen = () => {
 
   const categories: ArticleCategory[] = ['nutrisi', 'diet', 'kesehatan', 'hipertensi', 'diabetes', 'kanker'];
 
-  // Fungsi untuk membuka galeri gambar
   const pickImage = async () => {
-    // Meminta izin akses ke galeri
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (permissionResult.granted === false) {
       Alert.alert("Izin Diperlukan", "Anda perlu memberikan izin akses ke galeri untuk memilih gambar.");
@@ -54,7 +51,7 @@ const CreateArticleScreen = () => {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [16, 9],
-      quality: 0.7, // Kompresi gambar untuk menghemat ukuran
+      quality: 0.7,
     });
 
     if (!result.canceled) {
@@ -63,7 +60,6 @@ const CreateArticleScreen = () => {
   };
 
   const handlePublish = async () => {
-    // Validasi input
     if (!form.title || !form.content || !form.category) {
       Alert.alert("Input Tidak Lengkap", "Judul, Konten, dan Kategori wajib diisi.");
       return;
@@ -79,7 +75,6 @@ const CreateArticleScreen = () => {
 
     setIsSubmitting(true);
     try {
-      // 1. Siapkan file untuk diunggah ke Appwrite
       const fileToUpload = {
         name: imageAsset.fileName || `article_${Date.now()}.jpg`,
         type: imageAsset.mimeType,
@@ -87,16 +82,14 @@ const CreateArticleScreen = () => {
         size: imageAsset.fileSize,
       };
 
-      // 2. Unggah file dan dapatkan URL publiknya
       const uploadedFile = await uploadFile(fileToUpload, config.storageBucketId!);
       const image = getFilePreview(config.storageBucketId!, uploadedFile.$id).href;
 
-      // 3. Panggil fungsi publishNewArticle dengan data lengkap, termasuk image
       await publishNewArticle({
         ...form,
         author: admin.name,
         tags: form.tags.split(',').map(tag => tag.trim()).filter(tag => tag),
-        image: image, // Gunakan URL dari gambar yang baru diunggah
+        image: image,
         isPublished: true,
       });
 
@@ -142,27 +135,65 @@ const CreateArticleScreen = () => {
           {/* Judul Artikel */}
           <View>
             <Text className="text-base text-gray-600 mb-2">Judul Artikel</Text>
-            <TextInput value={form.title} onChangeText={(e) => setForm({ ...form, title: e })} placeholder="Contoh: Manfaat Sarapan Pagi" className="border border-gray-300 p-4 rounded-xl text-base" />
+            <TextInput 
+              value={form.title} 
+              onChangeText={(e) => setForm({ ...form, title: e })} 
+              placeholder="Contoh: Manfaat Sarapan Pagi" 
+              // --- PERBAIKAN ---
+              className="border border-gray-300 p-4 rounded-xl text-base text-black" 
+              placeholderTextColor="#9CA3AF"
+            />
           </View>
 
           {/* Deskripsi Singkat */}
           <View>
             <Text className="text-base text-gray-600 mb-2">Deskripsi Singkat</Text>
-            <TextInput value={form.description} onChangeText={(e) => setForm({ ...form, description: e })} placeholder="Ringkasan singkat dari isi artikel" multiline className="border border-gray-300 p-4 rounded-xl text-base h-24" style={{ textAlignVertical: 'top' }} />
+            <TextInput 
+              value={form.description} 
+              onChangeText={(e) => setForm({ ...form, description: e })} 
+              placeholder="Ringkasan singkat dari isi artikel" 
+              multiline 
+              // --- PERBAIKAN ---
+              className="border border-gray-300 p-4 rounded-xl text-base h-24 text-black" 
+              style={{ textAlignVertical: 'top' }}
+              placeholderTextColor="#9CA3AF"
+            />
           </View>
 
           {/* Konten Utama */}
           <View>
             <Text className="text-base text-gray-600 mb-2">Konten Utama</Text>
-            <TextInput value={form.content} onChangeText={(e) => setForm({ ...form, content: e })} placeholder="Tulis isi lengkap artikel di sini..." multiline className="border border-gray-300 p-4 rounded-xl text-base h-48" style={{ textAlignVertical: 'top' }} />
+            <TextInput 
+              value={form.content} 
+              onChangeText={(e) => setForm({ ...form, content: e })} 
+              placeholder="Tulis isi lengkap artikel di sini..." 
+              multiline 
+              // --- PERBAIKAN ---
+              className="border border-gray-300 p-4 rounded-xl text-base h-48 text-black" 
+              style={{ textAlignVertical: 'top' }}
+              placeholderTextColor="#9CA3AF"
+            />
           </View>
           
           {/* Kategori */}
           <View>
             <Text className="text-base text-gray-600 mb-2">Kategori</Text>
             <View className="border border-gray-300 rounded-xl">
-              <Picker selectedValue={form.category} onValueChange={(val: ArticleCategory) => setForm({ ...form, category: val })} style={{ height: 56 }}>
-                {categories.map((cat) => <Picker.Item key={cat} label={cat.charAt(0).toUpperCase() + cat.slice(1)} value={cat} />)}
+              <Picker 
+                selectedValue={form.category} 
+                onValueChange={(val: ArticleCategory) => setForm({ ...form, category: val })} 
+                // --- PERBAIKAN ---
+                style={{ height: 56, color: '#000000' }} 
+                dropdownIconColor="#0BBEBB"
+              >
+                {categories.map((cat) => (
+                  <Picker.Item 
+                    key={cat} 
+                    label={cat.charAt(0).toUpperCase() + cat.slice(1)} 
+                    value={cat}
+                    color="#000000"
+                  />
+                ))}
               </Picker>
             </View>
           </View>
@@ -170,7 +201,14 @@ const CreateArticleScreen = () => {
           {/* Tags */}
           <View>
             <Text className="text-base text-gray-600 mb-2">Tags (pisahkan dengan koma)</Text>
-            <TextInput value={form.tags} onChangeText={(e) => setForm({ ...form, tags: e })} placeholder="diet, sehat, olahraga" className="border border-gray-300 p-4 rounded-xl text-base" />
+            <TextInput 
+              value={form.tags} 
+              onChangeText={(e) => setForm({ ...form, tags: e })} 
+              placeholder="diet, sehat, olahraga" 
+              // --- PERBAIKAN ---
+              className="border border-gray-300 p-4 rounded-xl text-base text-black"
+              placeholderTextColor="#9CA3AF"
+            />
           </View>
 
           {/* Tombol Publikasi */}

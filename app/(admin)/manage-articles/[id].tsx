@@ -3,16 +3,13 @@
 import {
   getArticleById,
   updateArticle,
-  uploadFile,
-  getFilePreview,
-  config
 } from '@/lib/appwrite';
-import { Article, CreateArticleData } from '@/types/article';
-import { useGlobalContext } from '@/lib/global-provider';
+import { CreateArticleData } from '@/types/article';
 import { Ionicons } from '@expo/vector-icons';
+import { Picker } from '@react-native-picker/picker';
+import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import * as ImagePicker from 'expo-image-picker';
 import {
   ActivityIndicator,
   Alert,
@@ -25,7 +22,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
 
 type ArticleCategory = CreateArticleData['category'];
 
@@ -33,7 +29,6 @@ const EditArticleScreen = () => {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   
-  // State untuk form, dengan tipe yang jelas
   const [form, setForm] = useState<Partial<Omit<CreateArticleData, 'tags' | 'image'>> & { tags: string }>({
     title: '',
     description: '',
@@ -50,7 +45,6 @@ const EditArticleScreen = () => {
 
   const categories: ArticleCategory[] = ['nutrisi', 'diet', 'kesehatan', 'hipertensi', 'diabetes', 'kanker'];
 
-  // Mengambil data artikel saat halaman dimuat
   useEffect(() => {
     const fetchArticle = async () => {
       if (!id) return;
@@ -63,7 +57,6 @@ const EditArticleScreen = () => {
             description: articleData.description,
             content: articleData.content,
             category: articleData.category,
-            // PERBAIKAN: Ubah array tags menjadi string untuk ditampilkan di TextInput
             tags: articleData.tags.join(', '), 
             isPublished: articleData.isPublished,
           });
@@ -91,6 +84,7 @@ const EditArticleScreen = () => {
   };
 
   const handleUpdate = async () => {
+    if (!id) return;
     if (!form.title || !form.content) {
       Alert.alert("Input Tidak Lengkap", "Judul dan Konten wajib diisi.");
       return;
@@ -99,7 +93,6 @@ const EditArticleScreen = () => {
     try {
       const updatePayload: Partial<CreateArticleData> = {
         ...form,
-        // PERBAIKAN: Ubah string tags kembali menjadi array sebelum dikirim
         tags: form.tags.split(',').map((tag: string) => tag.trim()).filter((tag: string) => tag),
         imageFile: imageAsset ? {
           name: imageAsset.fileName || `article_${Date.now()}.jpg`,
@@ -107,10 +100,10 @@ const EditArticleScreen = () => {
           uri: imageAsset.uri,
           size: imageAsset.fileSize,
         } : undefined,
-        image: currentImageUrl || '', // Sertakan URL gambar saat ini
+        image: currentImageUrl || '',
       };
       
-      await updateArticle(id!, updatePayload);
+      await updateArticle(id, updatePayload);
       Alert.alert("Sukses!", "Artikel berhasil diperbarui.", [{ text: "OK", onPress: () => router.back() }]);
     } catch (error: any) {
       Alert.alert("Error", `Gagal memperbarui: ${error.message}`);
@@ -150,32 +143,67 @@ const EditArticleScreen = () => {
           
           <View>
             <Text className="text-base text-gray-600 mb-2">Judul Artikel</Text>
-            <TextInput value={form.title} onChangeText={(e) => setForm({ ...form, title: e })} className="border border-gray-300 p-4 rounded-xl text-base" />
+            <TextInput 
+              value={form.title} 
+              onChangeText={(e) => setForm({ ...form, title: e })} 
+              className="border border-gray-300 p-4 rounded-xl text-base text-black"
+              placeholderTextColor="#9CA3AF"
+            />
           </View>
           
           <View>
             <Text className="text-base text-gray-600 mb-2">Deskripsi</Text>
-            <TextInput value={form.description} onChangeText={(e) => setForm({ ...form, description: e })} multiline className="border border-gray-300 p-4 rounded-xl text-base h-24" style={{ textAlignVertical: 'top' }} />
+            <TextInput 
+              value={form.description} 
+              onChangeText={(e) => setForm({ ...form, description: e })} 
+              multiline 
+              className="border border-gray-300 p-4 rounded-xl text-base h-24 text-black" 
+              style={{ textAlignVertical: 'top' }}
+              placeholderTextColor="#9CA3AF"
+            />
           </View>
 
           <View>
             <Text className="text-base text-gray-600 mb-2">Konten</Text>
-            <TextInput value={form.content} onChangeText={(e) => setForm({ ...form, content: e })} multiline className="border border-gray-300 p-4 rounded-xl text-base h-48" style={{ textAlignVertical: 'top' }} />
+            <TextInput 
+              value={form.content} 
+              onChangeText={(e) => setForm({ ...form, content: e })} 
+              multiline 
+              className="border border-gray-300 p-4 rounded-xl text-base h-48 text-black" 
+              style={{ textAlignVertical: 'top' }}
+              placeholderTextColor="#9CA3AF"
+            />
           </View>
 
           <View>
             <Text className="text-base text-gray-600 mb-2">Kategori</Text>
             <View className="border border-gray-300 rounded-xl">
-              <Picker selectedValue={form.category} onValueChange={(val: ArticleCategory) => setForm({ ...form, category: val })} style={{ height: 56 }}>
-                {categories.map((cat) => <Picker.Item key={cat} label={cat.charAt(0).toUpperCase() + cat.slice(1)} value={cat} />)}
+              <Picker 
+                selectedValue={form.category} 
+                onValueChange={(val: ArticleCategory) => setForm({ ...form, category: val })} 
+                style={{ height: 56, color: '#000000' }}
+                dropdownIconColor="#0BBEBB"
+              >
+                {categories.map((cat) => (
+                  <Picker.Item 
+                    key={cat} 
+                    label={cat.charAt(0).toUpperCase() + cat.slice(1)} 
+                    value={cat} 
+                    color="#000000"
+                  />
+                ))}
               </Picker>
             </View>
           </View>
 
           <View>
             <Text className="text-base text-gray-600 mb-2">Tags (pisahkan dengan koma)</Text>
-            {/* PERBAIKAN: TextInput value harus string */}
-            <TextInput value={form.tags} onChangeText={(e) => setForm({ ...form, tags: e })} className="border border-gray-300 p-4 rounded-xl text-base" />
+            <TextInput 
+              value={form.tags} 
+              onChangeText={(e) => setForm({ ...form, tags: e })} 
+              className="border border-gray-300 p-4 rounded-xl text-base text-black"
+              placeholderTextColor="#9CA3AF"
+            />
           </View>
 
           <View className="flex-row items-center justify-between p-4 bg-gray-50 rounded-xl">

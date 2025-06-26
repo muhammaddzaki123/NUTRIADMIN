@@ -25,11 +25,10 @@ const AddNutritionistScreen = () => {
     email: '',
     password: '',
     specialization: '',
-    gender: '', // Tambahkan state untuk gender
+    gender: '',
   });
 
   const handleCreate = async () => {
-    // Tambahkan pengecekan untuk gender
     if (!form.name || !form.email || !form.password || !form.specialization || !form.gender) {
       Alert.alert("Input Tidak Lengkap", "Semua kolom wajib diisi.");
       return;
@@ -78,15 +77,36 @@ const AddNutritionistScreen = () => {
         <View className="space-y-5">
           <View>
             <Text className="text-base text-gray-600 mb-2">Nama Lengkap</Text>
-            <TextInput value={form.name} onChangeText={(e) => setForm({ ...form, name: e })} placeholder="Masukkan nama lengkap" className="border border-gray-300 p-4 rounded-xl text-base" />
+            <TextInput 
+              value={form.name} 
+              onChangeText={(e) => setForm({ ...form, name: e })} 
+              placeholder="Masukkan nama lengkap" 
+              className="border border-gray-300 p-4 rounded-xl text-base text-black" 
+              placeholderTextColor="#9CA3AF"
+            />
           </View>
           <View>
             <Text className="text-base text-gray-600 mb-2">Email</Text>
-            <TextInput value={form.email} onChangeText={(e) => setForm({ ...form, email: e })} placeholder="Contoh: ahligizi@example.com" keyboardType="email-address" autoCapitalize="none" className="border border-gray-300 p-4 rounded-xl text-base" />
+            <TextInput 
+              value={form.email} 
+              onChangeText={(e) => setForm({ ...form, email: e })} 
+              placeholder="Contoh: ahligizi@example.com" 
+              keyboardType="email-address" 
+              autoCapitalize="none" 
+              className="border border-gray-300 p-4 rounded-xl text-base text-black" 
+              placeholderTextColor="#9CA3AF"
+            />
           </View>
           <View>
             <Text className="text-base text-gray-600 mb-2">Password</Text>
-            <TextInput value={form.password} onChangeText={(e) => setForm({ ...form, password: e })} placeholder="Buat password" secureTextEntry className="border border-gray-300 p-4 rounded-xl text-base" />
+            <TextInput 
+              value={form.password} 
+              onChangeText={(e) => setForm({ ...form, password: e })} 
+              placeholder="Buat password" 
+              secureTextEntry 
+              className="border border-gray-300 p-4 rounded-xl text-base text-black" 
+              placeholderTextColor="#9CA3AF"
+            />
           </View>
           
           {/* Tambahkan input untuk Jenis Kelamin */}
@@ -96,11 +116,12 @@ const AddNutritionistScreen = () => {
                <Picker
                   selectedValue={form.gender}
                   onValueChange={(val) => setForm({ ...form, gender: val })}
-                  style={{ height: 56 }}
+                  style={{ height: 56, color: '#000000' }}
+                  dropdownIconColor="#0BBEBB"
                 >
-                  <Picker.Item label="Pilih Jenis Kelamin" value="" />
-                  <Picker.Item label="Laki-laki" value="Laki-laki" />
-                  <Picker.Item label="Perempuan" value="Perempuan" />
+                  <Picker.Item label="Pilih Jenis Kelamin" value="" color="#888888" />
+                  <Picker.Item label="Laki-laki" value="Laki-laki" color="#000000"/>
+                  <Picker.Item label="Perempuan" value="Perempuan" color="#000000"/>
                 </Picker>
             </View>
           </View>
@@ -108,8 +129,20 @@ const AddNutritionistScreen = () => {
           <View>
             <Text className="text-base text-gray-600 mb-2">Spesialisasi</Text>
             <View className="border border-gray-300 rounded-xl">
-              <Picker selectedValue={form.specialization} onValueChange={(val) => setForm({ ...form, specialization: val })} style={{ height: 56 }}>
-                {specializations.map((s) => <Picker.Item key={s.value} label={s.label} value={s.value} />)}
+              <Picker 
+                selectedValue={form.specialization} 
+                onValueChange={(val) => setForm({ ...form, specialization: val })} 
+                style={{ height: 56, color: '#000000' }}
+                dropdownIconColor="#0BBEBB"
+              >
+                {specializations.map((s) => (
+                  <Picker.Item 
+                    key={s.value} 
+                    label={s.label} 
+                    value={s.value}
+                    color={s.value === '' ? '#888888' : '#000000'}
+                  />
+                ))}
               </Picker>
             </View>
           </View>

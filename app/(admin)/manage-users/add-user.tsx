@@ -27,11 +27,11 @@ const AddUserScreen = () => {
     password: '',
     age: '',
     gender: '',
-    disease: '', // Diubah menjadi string kosong
+    disease: '',
   });
 
   const handleCreateUser = async () => {
-    // Validasi input diubah menjadi !form.disease
+    // Validasi input
     if (!form.name || !form.email || !form.password || !form.age || !form.gender || !form.disease) {
       Alert.alert("Input Tidak Lengkap", "Semua kolom wajib diisi.");
       return;
@@ -39,7 +39,6 @@ const AddUserScreen = () => {
 
     setIsSubmitting(true);
     try {
-      // PERUBAHAN 2: Hapus .toLowerCase() karena nilai form.disease sudah benar
       await createNewUser({
         ...form,
       });
@@ -47,7 +46,7 @@ const AddUserScreen = () => {
       Alert.alert(
         "Sukses!",
         "Pengguna baru berhasil dibuat.",
-        [{ text: "OK", onPress: () => router.back() }] // Kembali ke halaman daftar
+        [{ text: "OK", onPress: () => router.back() }]
       );
 
     } catch (error: any) {
@@ -58,7 +57,6 @@ const AddUserScreen = () => {
     }
   };
 
-  // PERUBAHAN 1: Ubah menjadi array objek { label, value }
   const diseases = [
     { label: 'Pilih penyakit', value: '' },
     { label: 'Diabetes Melitus', value: 'diabetes_melitus' },
@@ -96,7 +94,8 @@ const AddUserScreen = () => {
               value={form.name}
               onChangeText={(e) => setForm({ ...form, name: e })}
               placeholder="Masukkan nama lengkap pengguna"
-              className="border border-gray-300 p-4 rounded-xl text-base"
+              className="border border-gray-300 p-4 rounded-xl text-base text-black"
+              placeholderTextColor="#9CA3AF"
             />
           </View>
           
@@ -109,7 +108,8 @@ const AddUserScreen = () => {
               placeholder="Contoh: user@example.com"
               keyboardType="email-address"
               autoCapitalize="none"
-              className="border border-gray-300 p-4 rounded-xl text-base"
+              className="border border-gray-300 p-4 rounded-xl text-base text-black"
+              placeholderTextColor="#9CA3AF"
             />
           </View>
 
@@ -121,7 +121,8 @@ const AddUserScreen = () => {
               onChangeText={(e) => setForm({ ...form, password: e })}
               placeholder="Buat password untuk pengguna"
               secureTextEntry
-              className="border border-gray-300 p-4 rounded-xl text-base"
+              className="border border-gray-300 p-4 rounded-xl text-base text-black"
+              placeholderTextColor="#9CA3AF"
             />
           </View>
 
@@ -134,7 +135,8 @@ const AddUserScreen = () => {
                 onChangeText={(e) => setForm({ ...form, age: e })}
                 placeholder="Tahun"
                 keyboardType="numeric"
-                className="border border-gray-300 p-4 rounded-xl text-base"
+                className="border border-gray-300 p-4 rounded-xl text-base text-black"
+                placeholderTextColor="#9CA3AF"
               />
             </View>
             <View className="flex-1 ml-2">
@@ -143,11 +145,12 @@ const AddUserScreen = () => {
                  <Picker
                     selectedValue={form.gender}
                     onValueChange={(val) => setForm({ ...form, gender: val })}
-                    style={{ height: 56 }}
+                    style={{ height: 56, color: '#000000' }}
+                    dropdownIconColor="#0BBEBB"
                   >
-                    <Picker.Item label="Pilih" value="" />
-                    <Picker.Item label="Laki-laki" value="Laki-laki" />
-                    <Picker.Item label="Perempuan" value="Perempuan" />
+                    <Picker.Item label="Pilih Jenis Kelamin" value="" color="#888888" />
+                    <Picker.Item label="Laki-laki" value="Laki-laki" color="#000000" />
+                    <Picker.Item label="Perempuan" value="Perempuan" color="#000000" />
                   </Picker>
               </View>
             </View>
@@ -157,13 +160,20 @@ const AddUserScreen = () => {
           <View>
             <Text className="text-base text-gray-600 mb-2">Riwayat Penyakit</Text>
             <View className="border border-gray-300 rounded-xl">
-              {/* PERUBAHAN 3: Render Picker dari array objek */}
               <Picker
                 selectedValue={form.disease}
                 onValueChange={(val) => setForm({ ...form, disease: val })}
-                style={{ height: 56 }}
+                style={{ height: 56, color: '#000000' }}
+                dropdownIconColor="#0BBEBB"
               >
-                {diseases.map((d) => <Picker.Item key={d.value} label={d.label} value={d.value} />)}
+                {diseases.map((d) => (
+                  <Picker.Item 
+                    key={d.value} 
+                    label={d.label} 
+                    value={d.value} 
+                    color={d.value === '' ? '#888888' : '#000000'}
+                  />
+                ))}
               </Picker>
             </View>
           </View>

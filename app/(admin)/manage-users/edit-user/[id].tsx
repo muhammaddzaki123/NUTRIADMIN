@@ -42,7 +42,7 @@ const EditUserScreen = () => {
         if (userData) {
           setForm({
             name: userData.name,
-            email: userData.email, // Email tidak bisa diedit
+            email: userData.email,
             age: userData.age ? userData.age.toString() : '',
             gender: userData.gender,
             disease: userData.disease,
@@ -58,13 +58,14 @@ const EditUserScreen = () => {
   }, [id]);
 
   const handleUpdate = async () => {
+    if (!id) return;
     if (!form.name || !form.age || !form.gender || !form.disease) {
       Alert.alert("Input Tidak Lengkap", "Semua kolom wajib diisi kecuali email.");
       return;
     }
     setIsSubmitting(true);
     try {
-      await updateUser(id!, {
+      await updateUser(id, {
         name: form.name,
         age: form.age,
         gender: form.gender,
@@ -81,13 +82,14 @@ const EditUserScreen = () => {
   };
 
   const handlePasswordUpdate = async () => {
+    if (!id) return;
     if (password.length < 8) {
       Alert.alert("Error", "Password baru harus terdiri dari minimal 8 karakter.");
       return;
     }
     setIsPasswordSubmitting(true);
     try {
-      await updateUserPassword(id!, password);
+      await updateUserPassword(id, password);
       Alert.alert("Sukses!", "Password pengguna berhasil diperbarui.");
       setPassword(''); // Kosongkan field setelah berhasil
     } catch (error: any) {
@@ -129,24 +131,45 @@ const EditUserScreen = () => {
         <View className="space-y-5">
           <View>
             <Text className="text-base text-gray-600 mb-2">Nama Lengkap</Text>
-            <TextInput value={form.name} onChangeText={(e) => setForm({ ...form, name: e })} className="border border-gray-300 p-4 rounded-xl text-base" />
+            <TextInput 
+              value={form.name} 
+              onChangeText={(e) => setForm({ ...form, name: e })} 
+              className="border border-gray-300 p-4 rounded-xl text-base text-black" 
+              placeholderTextColor="#9CA3AF"
+            />
           </View>
           <View>
             <Text className="text-base text-gray-600 mb-2">Email (Tidak dapat diubah)</Text>
-            <TextInput value={form.email} editable={false} className="border border-gray-300 p-4 rounded-xl text-base bg-gray-100 text-gray-500" />
+            <TextInput 
+              value={form.email} 
+              editable={false} 
+              className="border border-gray-300 p-4 rounded-xl text-base bg-gray-100 text-gray-500" 
+            />
           </View>
           <View className="flex-row justify-between">
             <View className="flex-1 mr-2">
               <Text className="text-base text-gray-600 mb-2">Usia</Text>
-              <TextInput value={form.age} onChangeText={(e) => setForm({ ...form, age: e })} keyboardType="numeric" className="border border-gray-300 p-4 rounded-xl text-base" />
+              <TextInput 
+                value={form.age} 
+                onChangeText={(e) => setForm({ ...form, age: e })} 
+                keyboardType="numeric" 
+                className="border border-gray-300 p-4 rounded-xl text-base text-black"
+                placeholder="Tahun"
+                placeholderTextColor="#9CA3AF"
+              />
             </View>
             <View className="flex-1 ml-2">
               <Text className="text-base text-gray-600 mb-2">Jenis Kelamin</Text>
               <View className="border border-gray-300 rounded-xl">
-                <Picker selectedValue={form.gender} onValueChange={(val) => setForm({ ...form, gender: val })} style={{ height: 56 }}>
-                  <Picker.Item label="Pilih" value="" />
-                  <Picker.Item label="Laki-laki" value="Laki-laki" />
-                  <Picker.Item label="Perempuan" value="Perempuan" />
+                <Picker 
+                  selectedValue={form.gender} 
+                  onValueChange={(val) => setForm({ ...form, gender: val })} 
+                  style={{ height: 56, color: '#000000' }}
+                  dropdownIconColor="#0BBEBB"
+                >
+                  <Picker.Item label="Pilih" value="" color="#888888" />
+                  <Picker.Item label="Laki-laki" value="Laki-laki" color="#000000" />
+                  <Picker.Item label="Perempuan" value="Perempuan" color="#000000" />
                 </Picker>
               </View>
             </View>
@@ -154,8 +177,20 @@ const EditUserScreen = () => {
           <View>
             <Text className="text-base text-gray-600 mb-2">Riwayat Penyakit</Text>
             <View className="border border-gray-300 rounded-xl">
-              <Picker selectedValue={form.disease} onValueChange={(val) => setForm({ ...form, disease: val })} style={{ height: 56 }}>
-                {diseases.map((d) => <Picker.Item key={d.value} label={d.label} value={d.value} />)}
+              <Picker 
+                selectedValue={form.disease} 
+                onValueChange={(val) => setForm({ ...form, disease: val })} 
+                style={{ height: 56, color: '#000000' }}
+                dropdownIconColor="#0BBEBB"
+              >
+                {diseases.map((d) => (
+                  <Picker.Item 
+                    key={d.value} 
+                    label={d.label} 
+                    value={d.value} 
+                    color={d.value === '' ? '#888888' : '#000000'}
+                  />
+                ))}
               </Picker>
             </View>
           </View>
@@ -174,7 +209,8 @@ const EditUserScreen = () => {
               onChangeText={setPassword}
               placeholder="Masukkan password baru (min. 8 karakter)"
               secureTextEntry
-              className="border border-gray-300 p-4 rounded-xl text-base"
+              className="border border-gray-300 p-4 rounded-xl text-base text-black"
+              placeholderTextColor="#9CA3AF"
             />
           </View>
           <TouchableOpacity 

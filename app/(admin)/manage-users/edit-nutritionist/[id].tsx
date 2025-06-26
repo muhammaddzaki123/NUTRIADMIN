@@ -56,13 +56,14 @@ const EditNutritionistScreen = () => {
   }, [id]);
 
   const handleUpdate = async () => {
+    if (!id) return;
     if (!form.name || !form.gender || !form.specialization) {
       Alert.alert("Input Tidak Lengkap", "Nama, Jenis Kelamin, dan Spesialisasi wajib diisi.");
       return;
     }
     setIsSubmitting(true);
     try {
-      await updateNutritionist(id!, {
+      await updateNutritionist(id, {
         name: form.name,
         gender: form.gender,
         specialization: form.specialization,
@@ -78,13 +79,14 @@ const EditNutritionistScreen = () => {
   };
 
   const handlePasswordUpdate = async () => {
+    if (!id) return;
     if (password.length < 8) {
       Alert.alert("Error", "Password baru harus terdiri dari minimal 8 karakter.");
       return;
     }
     setIsPasswordSubmitting(true);
     try {
-      await updateUserPassword(id!, password);
+      await updateUserPassword(id, password);
       Alert.alert("Sukses!", "Password ahli gizi berhasil diperbarui.");
       setPassword('');
     } catch (error: any) {
@@ -125,27 +127,53 @@ const EditNutritionistScreen = () => {
         <View className="space-y-5">
           <View>
             <Text className="text-base text-gray-600 mb-2">Nama Lengkap</Text>
-            <TextInput value={form.name} onChangeText={(e) => setForm({ ...form, name: e })} className="border border-gray-300 p-4 rounded-xl text-base" />
+            <TextInput 
+              value={form.name} 
+              onChangeText={(e) => setForm({ ...form, name: e })} 
+              className="border border-gray-300 p-4 rounded-xl text-base text-black" 
+              placeholderTextColor="#9CA3AF"
+            />
           </View>
           <View>
             <Text className="text-base text-gray-600 mb-2">Email (Tidak dapat diubah)</Text>
-            <TextInput value={form.email} editable={false} className="border border-gray-300 p-4 rounded-xl text-base bg-gray-100 text-gray-500" />
+            <TextInput 
+              value={form.email} 
+              editable={false} 
+              className="border border-gray-300 p-4 rounded-xl text-base bg-gray-100 text-gray-500" 
+            />
           </View>
           <View>
             <Text className="text-base text-gray-600 mb-2">Jenis Kelamin</Text>
             <View className="border border-gray-300 rounded-xl">
-              <Picker selectedValue={form.gender} onValueChange={(val) => setForm({ ...form, gender: val })} style={{ height: 56 }}>
-                <Picker.Item label="Pilih Jenis Kelamin" value="" />
-                <Picker.Item label="Laki-laki" value="Laki-laki" />
-                <Picker.Item label="Perempuan" value="Perempuan" />
+              <Picker 
+                selectedValue={form.gender} 
+                onValueChange={(val) => setForm({ ...form, gender: val })} 
+                style={{ height: 56, color: '#000000' }}
+                dropdownIconColor="#0BBEBB"
+              >
+                <Picker.Item label="Pilih Jenis Kelamin" value="" color="#888888" />
+                <Picker.Item label="Laki-laki" value="Laki-laki" color="#000000"/>
+                <Picker.Item label="Perempuan" value="Perempuan" color="#000000"/>
               </Picker>
             </View>
           </View>
           <View>
             <Text className="text-base text-gray-600 mb-2">Spesialisasi</Text>
             <View className="border border-gray-300 rounded-xl">
-              <Picker selectedValue={form.specialization} onValueChange={(val) => setForm({ ...form, specialization: val })} style={{ height: 56 }}>
-                {specializations.map((s) => <Picker.Item key={s.value} label={s.label} value={s.value} />)}
+              <Picker 
+                selectedValue={form.specialization} 
+                onValueChange={(val) => setForm({ ...form, specialization: val })} 
+                style={{ height: 56, color: '#000000' }}
+                dropdownIconColor="#0BBEBB"
+              >
+                {specializations.map((s) => (
+                    <Picker.Item 
+                        key={s.value} 
+                        label={s.label} 
+                        value={s.value} 
+                        color={s.value === '' ? '#888888' : '#000000'}
+                    />
+                ))}
               </Picker>
             </View>
           </View>
@@ -164,7 +192,8 @@ const EditNutritionistScreen = () => {
               onChangeText={setPassword}
               placeholder="Masukkan password baru (min. 8 karakter)"
               secureTextEntry
-              className="border border-gray-300 p-4 rounded-xl text-base"
+              className="border border-gray-300 p-4 rounded-xl text-base text-black"
+              placeholderTextColor="#9CA3AF"
             />
           </View>
           <TouchableOpacity 
